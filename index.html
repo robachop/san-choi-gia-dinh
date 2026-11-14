@@ -58,6 +58,20 @@
   .item b { display:block; }
   .treebig { font-size:3.2rem; line-height:1.1; }
   .nightbar { position:absolute; left:52px; right:0; z-index:3; background:#e7e9f5; border-radius:6px; text-align:center; font-size:.85rem; line-height:32px; cursor:pointer; color:#4b4f7a; }
+  .clock { text-align:center; background:var(--ink); color:#fff; border-radius:18px; padding:14px 10px 12px; margin-bottom:8px; }
+  .ctime { font-size:clamp(3rem, 15vw, 5.2rem); font-weight:800; letter-spacing:.04em; line-height:1.05; font-variant-numeric:tabular-nums; font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+  .cdate { font-size:clamp(1.15rem, 5vw, 1.7rem); font-weight:700; margin-top:4px; }
+  .todoitem { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .todoitem b { flex:1; min-width:0; }
+  .tsel { flex:0 0 auto; font:inherit; font-weight:600; padding:8px 10px; border-radius:12px; border:2px solid #d9d2c3; background:#fff; color:var(--ink); max-width:46%; cursor:pointer; }
+  .tsel.s1 { border-color:#339af0; background:#e7f5ff; }
+  .tsel.s2 { border-color:#2f9e44; background:#d3f9d8; }
+  .tsel.s3 { border-color:#e03131; background:#ffe3e3; }
+  @keyframes sway { 0%,100% { transform:rotate(-1.4deg); } 50% { transform:rotate(1.4deg); } }
+  @media (prefers-reduced-motion: reduce) { svg g { animation:none !important; } }
+  .card { position:relative; }
+  .ncount { position:absolute; top:8px; right:10px; min-width:2.1rem; padding:1px 9px; border-radius:999px; background:#e03131; color:#fff; font-style:normal; font-weight:800; font-size:1.2rem; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .ncount.zero { background:#2f9e44; }
   .stars { display:flex; flex-wrap:wrap; align-items:center; gap:2px; margin-top:6px; }
   .stars button { border:0; background:none; font-size:1.7rem; cursor:pointer; color:#f08c00; padding:0 2px; }
   .stars button:disabled { cursor:default; }
@@ -78,6 +92,10 @@
 </head>
 <body>
 <main>
+  <div class="clock" aria-live="off">
+    <div class="ctime" id="ctime">--:--</div>
+    <div class="cdate" id="cdate"></div>
+  </div>
   <section id="nha">
     <header>
       <h1>Sân chơi gia đình</h1>
@@ -86,11 +104,13 @@
 
     <h2>Góc của cả nhà</h2>
     <div class="grid" id="kids"></div>
+    <p class="legend">Số đỏ trên mỗi bé là việc còn phải làm hôm nay · ✓ xanh là đã xong hết.</p>
 
-    <h2>Nhà chung</h2>
-    <div class="grid">
-      <div class="tile" id="tRead" style="cursor:pointer"><span>📖</span>Bài đọc<small>3 truyện ngắn</small></div>
-      <div class="tile" id="tQuiz" style="cursor:pointer"><span>❓</span>Câu đố<small>Câu đố · ô chữ · tôi là ai</small></div>
+    <h2>🍇 Cây nho nhà mình</h2>
+    <div class="item" id="homeVine"></div>
+    <div class="grid" style="display:none">
+      <div class="tile" id="tRead" style="cursor:pointer;display:none"><span>📖</span>Bài đọc<small>3 truyện ngắn</small></div>
+      <div class="tile" id="tQuiz" style="cursor:pointer;display:none"><span>❓</span>Câu đố<small>Câu đố · ô chữ · tôi là ai</small></div>
       <div class="tile" id="tTree" style="cursor:pointer"><span>🍇</span>Cây nho<small>3 nhánh, 1 gốc</small></div>
     </div>
     <div class="panel" id="homePanel"></div>
@@ -341,7 +361,18 @@
     (k.chores || []).forEach(function (c) { if (!c[3] || c[3].indexOf(d) >= 0) a.push(c[2]); });
     return a;
   }
+  // Số việc còn phải làm hôm nay, hiện trên thẻ của mỗi bé (số đỏ; ✓ xanh khi xong hết)
+  function updateBadges() {
+    var st = loadTodo(), now = new Date(), day = ds(now);
+    Array.prototype.forEach.call(document.querySelectorAll(".ncount"), function (bd) {
+      var k = person(bd.dataset.k), left = 0;
+      todoItems(k, wd(now)).forEach(function (label) { if ((st[k.name + "|" + day + "|" + label] || TSTAT[0]) !== "Xong") left++; });
+      bd.textContent = left ? left : "✓";
+      bd.className = "ncount" + (left ? "" : " zero");
+    });
+  }
   function renderTodo() {
+    updateBadges();
     var wrap = document.getElementById("todo"), box = document.getElementById("todoList");
     if (viewing.parent) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
@@ -350,15 +381,15 @@
     var st = loadTodo(), day = ds(startDate);
     todoItems(viewing, wd(startDate)).forEach(function (label) {
       var key = viewing.name + "|" + day + "|" + label, cur = st[key] || TSTAT[0];
-      var it = el("div", "item" + (cur === "Xong" ? " fin" : "") + (cur === "Cần giúp" ? " help" : ""));
+      var it = el("div", "item todoitem" + (cur === "Xong" ? " fin" : "") + (cur === "Cần giúp" ? " help" : ""));
       it.appendChild(el("b", "", label));
-      var c = el("div", "choices");
+      var sel = el("select", "tsel s" + TSTAT.indexOf(cur));
+      sel.setAttribute("aria-label", "Trạng thái: " + label);
       TSTAT.forEach(function (s) {
-        var b = el("button", s === cur ? "on" : "", s);
-        b.onclick = function () { var o = loadTodo(); o[key] = s; saveTodo(o); renderTodo(); };
-        c.appendChild(b);
+        var op = el("option", "", s); op.value = s; if (s === cur) op.selected = true; sel.appendChild(op);
       });
-      it.appendChild(c);
+      sel.onchange = function () { var o = loadTodo(); o[key] = sel.value; saveTodo(o); renderTodo(); };
+      it.appendChild(sel);
       box.appendChild(it);
     });
   }
@@ -381,7 +412,45 @@
       "Hai chị em giành nhau cây bút màu đẹp nhất. Giằng qua giằng lại, cây bút gãy làm đôi.",
       "Chị giận, không nói chuyện với em cả buổi chiều.",
       "Tối đó, chị thấy cạnh gối có cây bút đã được dán băng keo và một mảnh giấy: \"Xin lỗi chị.\" Chị bật cười. Hai chị em cùng ngồi tô một bức tranh, mỗi người một nửa cây bút.",
-      "Xin lỗi trước, cơn giận sẽ tan nhanh hơn." ] }
+      "Xin lỗi trước, cơn giận sẽ tan nhanh hơn." ] },
+    { t: "Chú chó đợi trước cổng", p: [
+      "Nam hứa chiều nay sẽ dắt chú chó Mực đi dạo. Nhưng về nhà, Nam mê chơi trò chơi trên máy quên mất lời hứa.",
+      "Mực ngoan ngoãn ngồi trước cổng, mắt cứ ngóng vào nhà. Một tiếng trôi qua, rồi hai tiếng. Mực vẫn ngồi đó.",
+      "Nghe mẹ nhắc, Nam nhìn ra cửa sổ và thấy Mực. Tim cậu thắt lại. Nam tắt máy, chạy ra ôm Mực: \"Xin lỗi mày, đi dạo thôi!\"",
+      "Hứa với ai cũng là hứa. Giữ lời hứa với người nhỏ bé nhất, càng đáng quý." ] },
+    { t: "Hạt giống của ông", p: [
+      "Ông nội đưa cho Bin một hạt giống nhỏ xíu: \"Con trồng đi, đợi ít lâu sẽ có điều bất ngờ.\"",
+      "Bin trồng xuống chậu, tưới nước. Sáng nào cậu cũng ra xem, nhưng đất vẫn phẳng lì. Bin chán, định bỏ.",
+      "\"Hạt giống đang làm việc dưới đất, con chưa thấy thôi,\" ông cười. Bin kiên nhẫn tưới thêm.",
+      "Một sáng, một mầm xanh nhú lên. Bin reo to đến nỗi cả nhà chạy ra xem.",
+      "Điều tốt đẹp cần thời gian. Cứ kiên nhẫn, đừng bỏ cuộc." ] },
+    { t: "Chiếc bánh chia ba", p: [
+      "Mẹ để trên bàn một chiếc bánh và dặn ba anh chị em chia nhau. Ai cũng muốn phần to nhất.",
+      "Anh cả nghĩ ra cách: \"Anh sẽ cắt bánh thành ba phần. Mỗi đứa chọn phần của mình, anh chọn sau cùng.\"",
+      "Biết mình chọn sau, anh cắt thật cẩn thận, ba phần đều tăm tắp. Không ai cãi nhau, cả nhà cười vui.",
+      "Công bằng bắt đầu từ việc nghĩ cho người khác trước mình." ] },
+    { t: "Bạn mới ngồi một mình", p: [
+      "Giờ ra chơi, Lan thấy bạn mới tên Thảo ngồi một mình bên gốc phượng, tay cầm cuốn vở, mắt buồn.",
+      "Lan đang chơi nhảy dây rất vui. Cô bé do dự một chút, rồi chạy lại: \"Thảo ơi, chơi với tụi mình nha!\"",
+      "Thảo ngẩng lên, ngạc nhiên rồi cười thật tươi. Chỉ một lát sau, Thảo đã nhảy dây cùng cả nhóm.",
+      "Một lời mời nhỏ có thể làm ấm lòng một người bạn mới." ] },
+    { t: "Điểm sáu thật thà", p: [
+      "Minh nhận bài kiểm tra, chỉ được sáu điểm. Cậu nhét tờ giấy vào đáy cặp, định không nói với ai.",
+      "Cả buổi tối Minh bồn chồn, ăn cơm không ngon. Cuối cùng, cậu lấy tờ bài ra đưa cho ba: \"Con làm bài chưa tốt.\"",
+      "Ba không la. Ba xoa đầu Minh: \"Cảm ơn con đã nói thật. Mình cùng ôn lại phần con chưa hiểu nhé.\"",
+      "Tối đó, Minh ngủ rất ngon. Nói thật làm lòng nhẹ như bỏ được hòn đá.",
+      "Thật thà đôi khi khó, nhưng luôn làm ta bình an." ] },
+    { t: "Đèn bếp còn sáng", p: [
+      "Mẹ đi làm về trễ. Vào nhà, mẹ thấy đèn bếp còn sáng và nghe tiếng nước chảy.",
+      "Ba đứa nhỏ đang rửa chén: đứa rửa, đứa tráng, đứa lau. Bàn ăn đã được dọn sạch, sàn cũng quét xong.",
+      "\"Tụi con muốn mẹ nghỉ sớm,\" bé út nói. Mẹ không nói được lời nào, chỉ ôm cả ba đứa thật chặt.",
+      "Sự giúp đỡ vì thương nhau là món quà đẹp nhất." ] },
+    { t: "Chiếc dù nhỏ của bà", p: [
+      "Trời mưa to, bà đến đón cháu ở cổng trường với một chiếc dù nhỏ cũ kỹ.",
+      "Dù chỉ đủ che cho một người. Bà nghiêng dù về phía cháu, vai áo bà ướt sũng mà bà vẫn cười: \"Bà không sao.\"",
+      "Cháu nắm chặt tay bà, kéo bà sát lại: \"Mình đi sát nhau, bà ướt thì con ướt cùng!\"",
+      "Về đến nhà, hai bà cháu cùng hắt xì hơi rồi cùng bật cười. Hôm đó là buổi chiều ấm nhất.",
+      "Tình thương biết nghĩ cho nhau làm cơn mưa cũng trở nên ấm." ] }
   ];
   var GAMES = [
     { t: "Câu đố Kinh Thánh" },
@@ -522,26 +591,82 @@
 
   // ----- Cây nho: 1 gốc chung, 3 nhánh (mỗi bé một nhánh), lớn lên theo số lần bón -----
   function vineHTML(hi) {
-    var o = loadP(), kids = KIDS.filter(function (k) { return !k.parent; });
-    var tg = [[55, 60], [150, 38], [245, 60]], total = 0, s = "";
+    var o = loadP(), kids = KIDS.filter(function (k) { return !k.parent; }), total = 0, s = "";
     kids.forEach(function (k) { total += (o[k.name] || {}).fed || 0; });
-    s += '<ellipse cx="150" cy="258" rx="90" ry="9" fill="#d9c9a8"/>';
-    s += '<line x1="150" y1="256" x2="150" y2="150" stroke="#7a4b22" stroke-width="' + (10 + Math.min(total, 30) * 0.4) + '" stroke-linecap="round"/>';
-    kids.forEach(function (k, i) {
-      var f = (o[k.name] || {}).fed || 0, p = Math.min(f / 10, 1), t = 0.3 + 0.7 * p;
-      var ex = 150 + (tg[i][0] - 150) * t, ey = 150 + (tg[i][1] - 150) * t;
-      s += '<line x1="150" y1="150" x2="' + ex + '" y2="' + ey + '" stroke="#8b5a2b" stroke-width="' + (k.name === hi ? 8 : 5) + '" stroke-linecap="round"/>';
-      var leaves = Math.min(f, 8), j;
-      for (j = 1; j <= leaves; j++) {
-        var fr = j / (leaves + 1), lx = 150 + (ex - 150) * fr + (j % 2 ? -9 : 9), ly = 150 + (ey - 150) * fr;
-        s += '<ellipse cx="' + lx + '" cy="' + ly + '" rx="8" ry="5" fill="#51cf66"/>';
-      }
-      var g = f >= 10 ? 9 : f >= 6 ? 6 : f >= 3 ? 3 : 0, q;
-      for (q = 0; q < g; q++) s += '<circle cx="' + (ex + ((q % 3) - 1) * 10) + '" cy="' + (ey + 12 + Math.floor(q / 3) * 10) + '" r="5.5" fill="' + k.color + '" stroke="#fff" stroke-width="1"/>';
-      if (f === 0) s += '<circle cx="' + ex + '" cy="' + ey + '" r="4" fill="#94d82d"/>';
-      s += '<text x="' + ex + '" y="' + (ey - 12) + '" text-anchor="middle" font-size="15" font-weight="' + (k.name === hi ? 800 : 500) + '" fill="#2b2b3a">' + k.icon + " " + k.name + "</text>";
+    function lerp(p, q, t) { return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; }
+    function bez(P, t) {
+      var u = 1 - t;
+      return [u * u * u * P[0][0] + 3 * u * u * t * P[1][0] + 3 * u * t * t * P[2][0] + t * t * t * P[3][0],
+              u * u * u * P[0][1] + 3 * u * u * t * P[1][1] + 3 * u * t * t * P[2][1] + t * t * t * P[3][1]];
+    }
+    function split(P, t) {
+      var a = lerp(P[0], P[1], t), b = lerp(P[1], P[2], t), c = lerp(P[2], P[3], t), d = lerp(a, b, t), e = lerp(b, c, t), f = lerp(d, e, t);
+      return [P[0], a, d, f];
+    }
+    function n1(v) { return Math.round(v * 10) / 10; }
+    var J = [180, 206];
+    var tips = [[58, 104], [180, 66], [302, 104]];
+    var ctl = [[[150, 176], [88, 168]], [[176, 166], [186, 112]], [[210, 176], [272, 168]]];
+    var tw = 9 + Math.min(total, 30) * 0.35;
+
+    var defs = '<defs>' +
+      '<linearGradient id="vSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe9ff"/><stop offset=".65" stop-color="#fff4dc"/></linearGradient>' +
+      '<linearGradient id="vGround" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ce99a"/><stop offset="1" stop-color="#37b24d"/></linearGradient>' +
+      '<linearGradient id="vBark" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5c3a1c"/><stop offset=".5" stop-color="#8d5a2b"/><stop offset="1" stop-color="#5c3a1c"/></linearGradient>' +
+      '</defs>';
+    s += '<rect width="360" height="320" rx="22" fill="url(#vSky)"/>';
+    s += '<circle cx="320" cy="40" r="24" fill="#ffe066"/><circle cx="320" cy="40" r="32" fill="#ffe066" opacity=".3"/>';
+    s += '<g fill="#fff" opacity=".85"><ellipse cx="62" cy="44" rx="30" ry="10"/><ellipse cx="86" cy="38" rx="22" ry="10"/><ellipse cx="250" cy="28" rx="26" ry="8"/></g>';
+    s += '<path d="M0 284 Q70 252 150 272 T300 268 T360 276 V320 H0Z" fill="url(#vGround)"/>';
+    s += '<path d="M0 300 Q90 284 190 298 T360 296 V320 H0Z" fill="#2f9e44" opacity=".55"/>';
+    [[34, 296, "#ff8787"], [66, 304, "#ffe066"], [296, 300, "#f783ac"], [330, 292, "#ffe066"], [112, 306, "#fff"], [262, 308, "#ff8787"]].forEach(function (f) {
+      s += '<circle cx="' + f[0] + '" cy="' + f[1] + '" r="3.2" fill="' + f[2] + '"/><circle cx="' + f[0] + '" cy="' + f[1] + '" r="1.2" fill="#f08c00"/>';
     });
-    return '<svg viewBox="0 0 300 270" style="width:100%;max-width:420px;display:block;margin:0 auto">' + s + "</svg>";
+    s += '<path d="M' + (180 - tw - 8) + ' 312 C' + (180 - tw) + ' 272 ' + (180 - tw * 0.6) + ' 236 ' + (180 - tw * 0.5) + ' 206 L' + (180 + tw * 0.5) + ' 206 C' + (180 + tw * 0.6) + ' 236 ' + (180 + tw) + ' 272 ' + (180 + tw + 8) + ' 312Z" fill="url(#vBark)"/>';
+    s += '<path d="M176 300 C174 268 176 236 177 210" stroke="#3d2610" stroke-width="1.4" fill="none" opacity=".5"/>';
+
+    var greens = ["#40c057", "#2f9e44", "#69db7c"];
+    kids.forEach(function (k, i) {
+      var f = (o[k.name] || {}).fed || 0, p = Math.min(f / 10, 1), t = 0.5 + 0.5 * p;
+      var sl = ({ "Nho": 0, "Tín": 1, "Xoài": 2 })[k.name]; if (sl === undefined) sl = i;
+      var P = [J, ctl[sl][0], ctl[sl][1], tips[sl]], Q = split(P, t), tip = Q[3], isHi = k.name === hi, j, q;
+      var path = 'M' + n1(Q[0][0]) + ' ' + n1(Q[0][1]) + ' C' + n1(Q[1][0]) + ' ' + n1(Q[1][1]) + ' ' + n1(Q[2][0]) + ' ' + n1(Q[2][1]) + ' ' + n1(Q[3][0]) + ' ' + n1(Q[3][1]);
+      s += '<g style="transform-origin:180px 206px;animation:sway ' + (5 + i * 0.8) + 's ease-in-out infinite;animation-delay:-' + i * 1.3 + 's">';
+      if (isHi) s += '<path d="' + path + '" stroke="' + k.color + '" stroke-width="17" stroke-linecap="round" fill="none" opacity=".35"/>';
+      s += '<path d="' + path + '" stroke="#6b4423" stroke-width="' + (isHi ? 10 : 7) + '" stroke-linecap="round" fill="none"/>';
+      s += '<path d="' + path + '" stroke="#a0693a" stroke-width="2" stroke-linecap="round" fill="none" opacity=".6"/>';
+      var leaves = Math.min(Math.floor(2 + f * 1.4), 16);
+      for (j = 0; j < leaves; j++) {
+        var pt = bez(P, t * (0.16 + 0.84 * (j + 0.5) / leaves)), side = j % 2 ? 1 : -1;
+        var ang = side > 0 ? -28 - (j * 7) % 22 : 208 + (j * 7) % 22;
+        s += '<g transform="translate(' + n1(pt[0]) + ' ' + n1(pt[1]) + ') rotate(' + ang + ')">' +
+          '<path d="M0 0 C6 -10 21 -10 26 0 C21 10 6 10 0 0Z" fill="' + greens[j % 3] + '"/>' +
+          '<path d="M2 0 L20 0" stroke="#2b8a3e" stroke-width=".9" opacity=".7"/></g>';
+      }
+      if (f >= 2) {
+        var tp = bez(P, t * 0.62);
+        s += '<path d="M' + n1(tp[0]) + ' ' + n1(tp[1]) + ' c8 -10 19 -4 13 6 s-13 3 -9 -6" stroke="#51cf66" stroke-width="1.7" fill="none" stroke-linecap="round"/>';
+      }
+      if (f === 0) s += '<circle cx="' + n1(tip[0]) + '" cy="' + n1(tip[1]) + '" r="6" fill="#94d82d"/><circle cx="' + n1(tip[0] - 1.5) + '" cy="' + n1(tip[1] - 1.5) + '" r="2" fill="#d8f5a2"/>';
+      var cn = f >= 10 ? 3 : f >= 6 ? 2 : f >= 3 ? 1 : 0, fr = [0.96, 0.72, 0.5];
+      for (q = 0; q < cn; q++) {
+        var gp = bez(P, t * fr[q]), gx = gp[0], gy = gp[1] + 4;
+        s += '<line x1="' + n1(gx) + '" y1="' + n1(gy - 4) + '" x2="' + n1(gx) + '" y2="' + n1(gy + 6) + '" stroke="#5c940d" stroke-width="2"/>';
+        [[-8, 14], [0, 14], [8, 14], [-4, 23], [4, 23], [0, 32]].forEach(function (g) {
+          var cx = gx + g[0], cy = gy + g[1];
+          s += '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="5.8" fill="' + k.color + '" stroke="rgba(0,0,0,.28)" stroke-width="1"/>' +
+               '<circle cx="' + n1(cx - 1.8) + '" cy="' + n1(cy - 2) + '" r="1.7" fill="#fff" opacity=".6"/>';
+        });
+      }
+      if (f >= 10) s += '<text x="' + n1(tip[0] + 18) + '" y="' + n1(tip[1] - 6) + '" font-size="16">✨</text>';
+      var tx = tips[sl][0], ty = tips[sl][1] - 36, lab = k.icon + " " + k.name + " · " + f;
+      s += '<line x1="' + tx + '" y1="' + (ty + 12) + '" x2="' + n1(tip[0]) + '" y2="' + n1(tip[1]) + '" stroke="' + k.color + '" stroke-width="2" stroke-dasharray="3 4" opacity=".7"/>';
+      s += '<rect x="' + (tx - 50) + '" y="' + (ty - 12) + '" width="100" height="24" rx="12" fill="' + k.color + '" stroke="' + (isHi ? "#2b2b3a" : "#fff") + '" stroke-width="' + (isHi ? 2.5 : 2) + '"/>' +
+           '<text x="' + tx + '" y="' + (ty + 5) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="rgba(0,0,0,.35)" stroke-width=".6" paint-order="stroke">' + lab + '</text>';
+      s += '</g>';
+    });
+    s += '<text x="36" y="168" font-size="20">🦋</text><text x="318" y="200" font-size="17">🐝</text>';
+    return '<svg viewBox="0 0 360 320" role="img" aria-label="Cây nho ba nhánh chung một gốc" style="width:100%;max-width:480px;display:block;margin:0 auto;border-radius:22px;box-shadow:0 2px 8px rgba(0,0,0,.12)">' + defs + s + '</svg>';
   }
 
   // ----- Nhà chung (trang đầu): bài đọc, câu đố, cây của cả nhà -----
@@ -584,6 +709,18 @@
     });
     p.appendChild(el("p", "legend", "Vào góc của con để đọc truyện, chơi và bón cây."));
     homeClose(p);
+  }
+  // Cây nho luôn mở sẵn ở trang chủ (không cần bấm mở/đóng)
+  function renderHomeVine() {
+    var box = document.getElementById("homeVine"), o = loadP();
+    box.innerHTML = vineHTML("");
+    KIDS.forEach(function (k) {
+      if (k.parent) return;
+      var d = o[k.name] || { pts: 0, fed: 0 }, st = STAGES[0];
+      STAGES.forEach(function (x) { if (d.fed >= x[0]) st = x; });
+      box.appendChild(el("p", "", k.icon + " " + k.name + ": " + st[1] + " " + st[2] + " · bón " + d.fed + " lần · ⭐ " + d.pts));
+    });
+    box.appendChild(el("p", "legend", "Vào góc của con để đọc truyện, chơi và bón nho."));
   }
   document.getElementById("tRead").onclick = function () { homeRead(); };
   document.getElementById("tQuiz").onclick = homeQuiz;
@@ -820,6 +957,7 @@
     b.style.background = k.color;
     b.innerHTML = "<span>" + k.icon + "</span><b></b>";
     b.querySelector("b").textContent = k.name;
+    if (!k.parent) { var bd = el("i", "ncount"); bd.dataset.k = k.name; bd.title = "Việc còn phải làm hôm nay"; b.appendChild(bd); }
     b.onclick = function () {
       me = k;
       document.getElementById("banner").style.background = k.color;
@@ -843,7 +981,19 @@
     kidsEl.appendChild(b);
   });
 
+  // ----- Đồng hồ điện tử + ngày tháng lớn -----
+  var DOW = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+  function tick() {
+    var n = new Date();
+    document.getElementById("ctime").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()) + ":" + pad(n.getSeconds());
+    document.getElementById("cdate").textContent = DOW[n.getDay()] + ", " + n.getDate() + " tháng " + (n.getMonth() + 1) + " năm " + n.getFullYear();
+  }
+  tick(); setInterval(function () { tick(); if (new Date().getSeconds() === 0) updateBadges(); }, 1000);
+  updateBadges();
+
+  renderHomeVine();
   document.getElementById("back").onclick = function () {
+    renderHomeVine();
     goc.className = "";
     nha.style.display = "";
   };
