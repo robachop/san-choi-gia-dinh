@@ -6,9 +6,10 @@
 <title>Sân chơi gia đình</title>
 <style>
   :root { --ink:#2b2b3a; --bg:#fff8ee; }
+  html { font-size:21px; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
-  main { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+  main { max-width:860px; margin:0 auto; padding:24px 12px 48px; }
   header { text-align:center; padding:16px 0 8px; }
   h1 { margin:0 0 6px; font-size:2rem; }
   header p { margin:0; font-size:1.05rem; opacity:.8; }
@@ -28,6 +29,41 @@
   .choices button { border:2px solid #d9d2c3; background:#fff; border-radius:999px; padding:8px 14px; font:inherit; cursor:pointer; }
   .choices button.on { border-color:var(--ink); background:var(--ink); color:#fff; }
   .note { margin-top:32px; font-size:.9rem; opacity:.65; text-align:center; }
+
+  .nav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; }
+  .nav button { border:2px solid #d9d2c3; background:#fff; border-radius:10px; padding:6px 12px; font:inherit; cursor:pointer; }
+  .nav input { border:2px solid #d9d2c3; border-radius:10px; padding:5px 8px; font:inherit; background:#fff; }
+  #monthLbl { font-weight:700; margin:10px 0 2px; }
+  .legend { font-size:.85rem; opacity:.85; margin:12px 0 0; display:flex; flex-wrap:wrap; gap:6px 16px; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:4px; border:2px solid transparent; }
+
+  .calwrap { margin-top:10px; max-height:70vh; overflow-y:auto; border-radius:14px; border:1px solid #e6dfd0; background:#fff; }
+  .dhead { position:sticky; top:0; z-index:5; display:flex; padding-left:52px; background:var(--bg); }
+  .dh { flex:1; text-align:center; font-size:.95rem; font-weight:700; padding:8px 2px; border-radius:8px 8px 0 0; background:#f1ead9; border-left:1px solid #fff; }
+  .dh.today { background:var(--ink); color:#fff; }
+  .cal { position:relative; background:#fff; overflow:hidden; }
+  .hl { position:absolute; left:0; right:0; border-top:1px solid #eee; font-size:.8rem; opacity:.65; padding-left:4px; pointer-events:none; }
+  .cols { position:absolute; left:52px; right:0; top:0; bottom:0; }
+  .col { position:absolute; top:0; bottom:0; border-left:1px solid #eee; }
+  .col.today { background:#fffdf4; }
+  .cell { position:absolute; left:2px; right:2px; border-radius:5px; background:#fff8e6; cursor:pointer; }
+  .cell:hover { background:#ffe8b3; }
+  .fixb { position:absolute; left:2px; right:2px; background:#dee2e6; border-left:5px solid #495057; border-radius:6px; padding:2px 6px; font-size:.9rem; overflow:hidden; line-height:1.2; }
+  .prop { position:absolute; left:3px; right:3px; border-radius:8px; padding:2px 6px; font-size:.9rem; font-weight:600; overflow:hidden; cursor:pointer; z-index:2; border:2px solid; border-left-width:6px; line-height:1.2; }
+  .prop.s-wait { background:#fff; border-style:dashed; }
+  .prop.s-ok { background:#b2f2bb; }
+  .prop.s-chg { background:#ffec99; }
+  .prop.s-no { background:#ffe3e3; opacity:.85; text-decoration:line-through; }
+  .item { background:#fff; border-radius:12px; padding:10px 12px; margin-top:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .item b { display:block; }
+  .item.fin b { text-decoration:line-through; opacity:.55; }
+  .item.help { border-left:6px solid #e03131; }
+  .panel { margin-top:14px; background:#fff; border-radius:14px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,.1); display:none; }
+  .panel.open { display:block; }
+  .panel p { margin:8px 0 4px; }
+  .send { border:0; border-radius:12px; background:var(--ink); color:#fff; padding:10px 16px; font:inherit; cursor:pointer; margin:10px 8px 0 0; }
+  .send.alt { background:#868e96; }
+  .send.good { background:#2f9e44; } .send.warn { background:#f08c00; } .send.bad { background:#e03131; }
 </style>
 </head>
 <body>
@@ -35,7 +71,7 @@
   <section id="nha">
     <header>
       <h1>Sân chơi gia đình</h1>
-      <p>Chọn góc của con để vào chơi.</p>
+      <p>Chọn góc của mình để vào chơi.</p>
     </header>
 
     <h2>Góc của cả nhà</h2>
@@ -53,29 +89,36 @@
     <button class="back" id="back">← Về nhà chung</button>
     <div class="banner" id="banner"></div>
 
-    <div id="lichBaMe" style="display:none">
-      <h2>Lịch của ba mẹ</h2>
-      <div class="grid">
-        <div class="tile"><span>🧔</span>Lịch của Ba<small>Ban ngày đi làm · tối ở nhà</small></div>
-        <div class="tile"><span>👩</span>Lịch của Mẹ<small>Ban ngày bận việc · tối ở nhà</small></div>
-        <div class="tile"><span>👫</span>Ba mẹ cùng bận<small>Sáng Chúa Nhật: đi lễ</small></div>
-      </div>
+    <div id="viewWho" style="display:none">
+      <h2>Xem lịch của ai?</h2>
+      <div class="choices" id="whoBtns"></div>
     </div>
 
-    <h2>Hôm nay của con</h2>
-    <div class="grid">
-      <div class="tile"><span>🏫</span>Trên lớp<small>Giờ cố định</small></div>
-      <div class="tile"><span>🏠</span>Ở nhà<small>Tự sắp xếp</small></div>
+    <div id="todo">
+      <h2 id="todoTitle">Việc cần làm</h2>
+      <div id="todoList"></div>
     </div>
 
-    <h2>Việc cần làm</h2>
-    <p>Bài tập hôm nay — con đang ở đâu?</p>
-    <div class="choices" id="status">
-      <button>Chưa làm</button><button>Đang làm</button><button>Xong</button><button>Cần giúp</button>
+    <h2 id="schedTitle">Lịch</h2>
+    <div class="nav">
+      <button id="pm" title="Lùi cả khối ngày đang xem">«</button>
+      <button id="pd" title="Lùi 1 ngày">‹</button>
+      <button id="tod">Hôm nay</button>
+      <button id="nd" title="Tới 1 ngày">›</button>
+      <button id="nm" title="Tới cả khối ngày đang xem">»</button>
+      <input type="date" id="jump" title="Chọn ngày bất kỳ">
     </div>
+    <div class="choices" id="spanBtns"><button data-n="3">3 ngày</button><button data-n="5">5 ngày</button><button data-n="7">7 ngày</button></div>
+    <div id="monthLbl"></div>
+    <div class="calwrap" id="calwrap">
+      <div class="dhead" id="dhead"></div>
+      <div class="cal" id="cal"></div>
+    </div>
+    <p class="legend" id="legend"></p>
+    <div class="panel" id="panel"></div>
 
-    <h2>Con muốn làm gì?</h2>
-    <div class="grid">
+    <h2 style="display:none">Con muốn làm gì?</h2>
+    <div class="grid" style="display:none">
       <div class="tile"><span>📚</span>Đọc truyện</div>
       <div class="tile"><span>🎨</span>Truyện tranh</div>
       <div class="tile"><span>🎵</span>Nghe nhạc</div>
@@ -84,41 +127,361 @@
       <div class="tile"><span>🗒️</span>Ghi chú để nhớ</div>
     </div>
 
-    <h2>Gởi cho ai?</h2>
-    <div class="choices" id="gui">
+    <h2 style="display:none">Gởi cho ai?</h2>
+    <div class="choices" id="gui" style="display:none">
       <button>Gởi ba</button><button>Gởi mẹ</button><button>Gởi ba + mẹ</button><button>Gởi cả nhà</button><button>Gởi cho nhau</button>
     </div>
   </section>
 
-  <p class="note">Bản đầu — các con xem thử và nói với ba điều con thích hoặc muốn đổi.</p>
+  <p class="note">Bản thử chạy trên máy này — các con xem thử và nói với ba điều con thích hoặc muốn đổi.</p>
 </main>
 
 <script>
-  // Sửa tên, màu, biểu tượng của từng con tại đây.
+  // ===== Dữ liệu mẫu (giả định) — sửa tên, màu, giờ học, giờ làm tại đây =====
   var KIDS = [
-    { name: "Con 1", color: "#e8590c", icon: "🦊" },
-    { name: "Con 2", color: "#1c7ed6", icon: "🐬" },
-    { name: "Con 3", color: "#2f9e44", icon: "🐢" },
-    { name: "Ba", color: "#495057", icon: "🧔", parent: true },
-    { name: "Mẹ", color: "#c2255c", icon: "👩", parent: true }
+    { name: "Tín", color: "#e8590c", icon: "🍉", lop: "9B2", start: "7:00", end: "11:15",
+      // Việc nhà được giao (ngày và giờ là GIẢ ĐỊNH; ngày: 0=T2 ... 5=T7, 6=CN) — sửa tại đây
+      chores: [["17:30", "18:00", "Giặt quần áo", [0, 2, 4]], ["10:00", "10:30", "Rửa nhà vệ sinh", [5]], ["10:30", "11:00", "Rửa nhà tắm", [5]], ["16:00", "16:30", "Đốt rác", [6]], ["20:30", "21:00", "Xếp quần áo"]] },
+    { name: "Nho", color: "#7048e8", icon: "🍇", lop: "6B2", start: "7:00", end: "11:15",
+      // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
+      chores: [["17:30", "17:45", "Cho chó ăn"], ["19:30", "19:50", "Rửa chén"], ["19:50", "20:00", "Úp chén"], ["20:00", "20:20", "Dọn bếp"], ["20:30", "21:00", "Xếp quần áo"]] },
+    { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", start: "7:30", end: "11:00",
+      // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
+      chores: [["17:30", "17:45", "Quét phòng khách"], ["17:45", "18:00", "Quét phòng ngủ"], ["18:00", "18:15", "Quét nhà giữa"], ["19:30", "19:45", "Dọn bàn ăn"], ["20:30", "21:00", "Xếp quần áo"]] },
+    { name: "Ba", color: "#495057", icon: "🧔", parent: true, start: "7:30", back: "17:30" },
+    { name: "Mẹ", color: "#c2255c", icon: "👩", parent: true, start: "8:00", back: "17:00" }
   ];
+  var SUBJ = ["Toán · Tiếng Việt", "Tiếng Anh · Khoa học", "Toán · Mỹ thuật", "Tiếng Việt · Thể dục", "Tiếng Anh · Âm nhạc"];
+  var DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+  var PURPOSES = [
+    { label: "Làm bài tập", color: "#339af0" },
+    { label: "Xem phim", color: "#9775fa" },
+    { label: "Chơi game", color: "#ff922b" },
+    { label: "Việc con muốn làm", color: "#20c997" },
+    { label: "Khác", color: "#868e96" }
+  ];
+  var STATUS = { wait: "Chờ ba mẹ", ok: "Ba mẹ đồng ý", chg: "Ba mẹ đã chỉnh giờ", no: "Chưa được" };
+  var KEY = "sc_cal2";
+  var T0 = 0, T1 = 1440, STEP = 30, PX = 44, SCROLL_TO = 360;
+
+  function m(s) { var p = s.split(":"); return +p[0] * 60 + +p[1]; }
+  function hm(n) { var mm = n % 60; return Math.floor(n / 60) + ":" + (mm < 10 ? "0" : "") + mm; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+  function colorOf(label) { for (var i = 0; i < PURPOSES.length; i++) if (PURPOSES[i].label === label) return PURPOSES[i].color; return "#868e96"; }
+  function person(name) { return KIDS.filter(function (k) { return k.name === name; })[0]; }
+
+  // Ngày tháng (giờ địa phương)
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function ds(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); }
+  function wd(d) { return (d.getDay() + 6) % 7; }
+  function dlabel(d) { return DAYS[wd(d)] + " " + d.getDate() + "/" + (d.getMonth() + 1); }
+
+  // Thời khóa biểu thật của trường THCS Tân Minh (HKI 2026-2027), chỉ phần đọc rõ từ ảnh.
+  // Giờ từng tiết là GIẢ ĐỊNH — sửa tại PM_TIME khi biết giờ thật.
+  var PM_TIME = { 2: ["14:00", "14:45"], 3: ["14:50", "15:35"], 4: ["15:45", "16:30"], 5: ["16:35", "17:20"] };
+  var ART_START = new Date(2026, 8, 21); // Mỹ thuật xoay 4 tuần, tuần 1 từ 21/09/2026
+  // [thứ (0=T2), các tiết chiều, tên, tuần Mỹ thuật (0-3) hoặc null = mọi tuần]
+  var SCHOOL = {
+    "9B2": [[1, [4, 5], "HĐ trải nghiệm (cô Lan)", null], [2, [4], "HĐ trải nghiệm (cô Lan)", null], [2, [4, 5], "Mỹ thuật (cô Hương)", [0, 2]]],
+    "6B2": [[0, [2, 3], "Thể dục (cô An)", null], [1, [4, 5], "Mỹ thuật (cô Hương)", [0, 2]], [2, [2, 3], "HĐ trải nghiệm (cô Vân)", null], [4, [2], "HĐ trải nghiệm (cô Vân)", null]]
+  };
+  function schoolBlocks(k, d, date) {
+    var b = [], wk = ((Math.floor(Math.round((date - ART_START) / 86400000) / 7) % 4) + 4) % 4;
+    if (d === 0) { b.push(["7:00", "7:45", "Chào cờ · sinh hoạt dưới cờ"]); b.push(["7:50", k.end, "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]); }
+    else if (d === 4) { b.push(["7:00", "10:25", "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]); b.push(["10:30", k.end, "Sinh hoạt lớp"]); }
+    else b.push([k.start, k.end, "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]);
+    SCHOOL[k.lop].forEach(function (it) {
+      if (it[0] !== d || (it[3] && it[3].indexOf(wk) < 0)) return;
+      b.push([PM_TIME[it[1][0]][0], PM_TIME[it[1][it[1].length - 1]][1], it[2]]);
+    });
+    return b;
+  }
+
+  // Giờ cố định theo thứ trong tuần: danh sách khối {s, e, label}
+  function fixedOf(k, d, date) {
+    var b = [];
+    if (d < 5) {
+      if (k.parent) { b.push([k.start, k.back, "Đi làm"]); }
+      else if (k.lop && SCHOOL[k.lop] && date) {
+        b = schoolBlocks(k, d, date);
+        b.push([k.end, "13:30", "Ăn trưa · nghỉ"]);
+        if (!k.chores) b.push(["17:30", "18:00", "Giúp việc nhà"]);
+      } else {
+        b.push([k.start, k.end, "Vào lớp" + (k.lop ? " " + k.lop : "") + ": " + SUBJ[d]]);
+        b.push([k.end, "12:30", "Ăn trưa · nghỉ"]);
+        if (!k.chores) b.push(["17:30", "18:00", "Giúp việc nhà"]);
+      }
+      b.push(["18:30", "19:30", "Cơm tối cả nhà"]);
+    } else if (d === 5) {
+      b.push(["8:00", "9:00", "Ăn sáng"]);
+      b.push(["9:00", "10:00", "Việc nhà cùng cả nhà"]);
+      b.push(["18:30", "19:30", "Cơm tối cả nhà"]);
+    } else {
+      b.push(["7:30", "11:30", "Cả nhà đi lễ"]);
+      b.push(["12:00", "13:00", "Cơm trưa cả nhà"]);
+      b.push(["18:30", "19:30", "Cơm tối cả nhà"]);
+    }
+    if (!k.parent) { b.push(["21:00", "24:00", "Đi ngủ"]); b.push(["0:00", "6:30", "Ngủ"]); }
+    return b.map(function (r) { return { s: m(r[0]), e: m(r[1]), label: r[2] }; });
+  }
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
+  function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
+
+  function isFree(who, date, s, dur, ignoreId) {
+    var e = s + dur;
+    if (s < T0 || e > T1) return false;
+    var fx = fixedOf(person(who), wd(parse(date)), parse(date)), i;
+    for (i = 0; i < fx.length; i++) if (s < fx[i].e && e > fx[i].s) return false;
+    var ps = load();
+    for (i = 0; i < ps.length; i++) {
+      var p = ps[i];
+      if (p.who === who && p.date === date && p.id !== ignoreId && p.status !== "no" && s < p.s + p.dur && e > p.s) return false;
+    }
+    return true;
+  }
+
+  var me = null, viewing = null;
+  var startDate = new Date(), span = 3;
+  startDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   var kidsEl = document.getElementById("kids");
   var nha = document.getElementById("nha");
   var goc = document.getElementById("goc");
-  var banner = document.getElementById("banner");
+  var panel = document.getElementById("panel");
+
+  function choices(items, onPick) {
+    var box = el("div", "choices");
+    items.forEach(function (it) {
+      var b = el("button", "", it.label);
+      b.onclick = function () {
+        Array.prototype.forEach.call(box.children, function (c) { c.className = ""; });
+        b.className = "on";
+        onPick(it);
+      };
+      box.appendChild(b);
+    });
+    return box;
+  }
+  function closePanel() { panel.className = "panel"; panel.innerHTML = ""; }
+  function openPanel() { panel.className = "panel open"; panel.innerHTML = ""; return panel; }
+
+  // ===== Việc cần làm (todo): học bài, sách vở + việc nhà được giao =====
+  var TKEY = "sc_todo";
+  var TSTAT = ["Chưa làm", "Đang làm", "Xong", "Cần giúp"];
+  var STUDY = ["Học bài các môn hôm nay", "Học bài các môn ngày mai", "Chuẩn bị sách vở"];
+  function loadTodo() { try { return JSON.parse(localStorage.getItem(TKEY)) || {}; } catch (e) { return {}; } }
+  function saveTodo(o) { try { localStorage.setItem(TKEY, JSON.stringify(o)); } catch (e) {} }
+  function todoItems(k, d) {
+    var a = STUDY.slice();
+    (k.chores || []).forEach(function (c) { if (!c[3] || c[3].indexOf(d) >= 0) a.push(c[2]); });
+    return a;
+  }
+  function renderTodo() {
+    var wrap = document.getElementById("todo"), box = document.getElementById("todoList");
+    if (viewing.parent) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+    box.innerHTML = "";
+    document.getElementById("todoTitle").textContent = "Việc cần làm — " + dlabel(startDate);
+    var st = loadTodo(), day = ds(startDate);
+    todoItems(viewing, wd(startDate)).forEach(function (label) {
+      var key = viewing.name + "|" + day + "|" + label, cur = st[key] || TSTAT[0];
+      var it = el("div", "item" + (cur === "Xong" ? " fin" : "") + (cur === "Cần giúp" ? " help" : ""));
+      it.appendChild(el("b", "", label));
+      var c = el("div", "choices");
+      TSTAT.forEach(function (s) {
+        var b = el("button", s === cur ? "on" : "", s);
+        b.onclick = function () { var o = loadTodo(); o[key] = s; saveTodo(o); renderTodo(); };
+        c.appendChild(b);
+      });
+      it.appendChild(c);
+      box.appendChild(it);
+    });
+  }
+
+  function render() {
+    var cal = document.getElementById("cal"), head = document.getElementById("dhead");
+    cal.innerHTML = ""; head.innerHTML = "";
+    renderTodo();
+    cal.style.height = ((T1 - T0) / STEP * PX) + "px";
+    var todayS = ds(new Date()), t, i;
+    var endDate = addDays(startDate, span - 1);
+    document.getElementById("monthLbl").textContent = startDate.getMonth() === endDate.getMonth()
+      ? "Tháng " + (startDate.getMonth() + 1) + "/" + startDate.getFullYear()
+      : "Tháng " + (startDate.getMonth() + 1) + " – " + (endDate.getMonth() + 1) + "/" + endDate.getFullYear();
+    Array.prototype.forEach.call(document.getElementById("spanBtns").children, function (b) {
+      b.className = +b.dataset.n === span ? "on" : "";
+    });
+
+    for (t = T0; t < T1; t += 60) {
+      var h = el("div", "hl", hm(t));
+      h.style.top = ((t - T0) / STEP * PX) + "px";
+      cal.appendChild(h);
+    }
+    var cols = el("div", "cols");
+    cal.appendChild(cols);
+    var props = load();
+
+    for (i = 0; i < span; i++) {
+      (function (d) {
+        var dateS = ds(d);
+        var dh = el("div", "dh" + (dateS === todayS ? " today" : ""), dlabel(d));
+        head.appendChild(dh);
+        var col = el("div", "col" + (dateS === todayS ? " today" : ""));
+        col.style.left = (i * 100 / span) + "%";
+        col.style.width = (100 / span) + "%";
+        fixedOf(viewing, wd(d), d).forEach(function (b) {
+          var x = el("div", "fixb", hm(b.s) + " " + b.label);
+          x.style.top = ((b.s - T0) / STEP * PX) + "px";
+          x.style.height = ((b.e - b.s) / STEP * PX - 2) + "px";
+          col.appendChild(x);
+        });
+        for (var tt = T0; tt < T1; tt += STEP) {
+          if (!isFree(viewing.name, dateS, tt, STEP)) continue;
+          (function (start) {
+            var c = el("div", "cell");
+            c.style.top = ((start - T0) / STEP * PX) + "px";
+            c.style.height = (PX - 1) + "px";
+            c.onclick = function () { openAdd(dateS, start); };
+            col.appendChild(c);
+          })(tt);
+        }
+        props.forEach(function (p) {
+          if (p.who !== viewing.name || p.date !== dateS) return;
+          var x = el("div", "prop s-" + p.status);
+          var colr = colorOf(p.purpose);
+          x.style.borderColor = p.status === "ok" ? "#2f9e44" : p.status === "chg" ? "#f08c00" : p.status === "no" ? "#e03131" : colr;
+          x.style.borderLeftColor = colr;
+          x.textContent = hm(p.s) + " " + p.purpose + (p.note ? " · " + p.note : "");
+          x.style.top = ((p.s - T0) / STEP * PX) + "px";
+          x.style.height = (p.dur / STEP * PX - 2) + "px";
+          x.onclick = function (e) { e.stopPropagation(); openDetail(p); };
+          col.appendChild(x);
+        });
+        cols.appendChild(col);
+      })(addDays(startDate, i));
+    }
+  }
+
+  function openAdd(dateS, start) {
+    var pn = openPanel();
+    if (viewing !== me) { pn.appendChild(el("p", "", "Đây là lịch của " + viewing.name + ". Chạm vào khung của con để duyệt.")); return; }
+    var purpose = null, dur = null;
+    pn.appendChild(el("p", "", "Bắt đầu: " + dlabel(parse(dateS)) + " · " + hm(start)));
+    pn.appendChild(el("p", "", me.parent ? "Việc gì?" : "Con muốn làm gì?"));
+    pn.appendChild(choices(PURPOSES, function (it) { purpose = it.label; }));
+    pn.appendChild(el("p", "", "Bao lâu?"));
+    var durs = [{ label: "30 phút", v: 30 }, { label: "1 giờ", v: 60 }, { label: "1,5 giờ", v: 90 }, { label: "2 giờ", v: 120 }]
+      .filter(function (x) { return isFree(me.name, dateS, start, x.v); });
+    pn.appendChild(choices(durs, function (it) { dur = it.v; }));
+    var note = el("input"); note.maxLength = 60; note.placeholder = "Ghi thêm (tên phim, môn học...)";
+    note.style.cssText = "width:100%;padding:10px;margin-top:10px;border:2px solid #d9d2c3;border-radius:10px;font:inherit";
+    pn.appendChild(note);
+    var msg = el("p", "legend");
+    var go = el("button", "send", me.parent ? "Thêm vào lịch" : "Gởi cho ba mẹ");
+    go.onclick = function () {
+      if (purpose === null || dur === null) { msg.textContent = "Chọn đủ việc gì và bao lâu nhé."; return; }
+      var a = load();
+      a.push({ id: Date.now() + "" + Math.floor(Math.random() * 1000), who: me.name, date: dateS, s: start, dur: dur, purpose: purpose, note: note.value, status: me.parent ? "ok" : "wait" });
+      save(a); closePanel(); render();
+    };
+    var cancel = el("button", "send alt", "Thôi"); cancel.onclick = closePanel;
+    pn.appendChild(go); pn.appendChild(cancel); pn.appendChild(msg);
+  }
+
+  function openDetail(p) {
+    var pn = openPanel();
+    pn.appendChild(el("p", "", p.purpose + (p.note ? " — " + p.note : "")));
+    pn.appendChild(el("p", "", dlabel(parse(p.date)) + " · " + hm(p.s) + "–" + hm(p.s + p.dur) + " · " + (viewing.parent ? "lịch của " + viewing.name : STATUS[p.status])));
+    function setStatus(s) {
+      var a = load();
+      a.forEach(function (x) { if (x.id === p.id) x.status = s; });
+      save(a); closePanel(); render();
+    }
+    if (me.parent && !viewing.parent) {
+      var ok = el("button", "send good", "Đồng ý"); ok.onclick = function () { setStatus("ok"); };
+      var no = el("button", "send bad", "Chưa được"); no.onclick = function () { setStatus("no"); };
+      var chg = el("button", "send warn", "Chỉnh giờ");
+      chg.onclick = function () {
+        var pn2 = openPanel();
+        pn2.appendChild(el("p", "", "Chọn giờ mới cho " + p.purpose + " (" + dlabel(parse(p.date)) + "):"));
+        var opts = [];
+        for (var t = T0; t < T1; t += STEP) if (isFree(p.who, p.date, t, p.dur, p.id)) opts.push({ label: hm(t), v: t });
+        if (!opts.length) { pn2.appendChild(el("p", "legend", "Hôm đó không còn khoảng trống đủ dài.")); return; }
+        pn2.appendChild(choices(opts, function (it) {
+          var a = load();
+          a.forEach(function (x) { if (x.id === p.id) { x.s = it.v; x.status = "chg"; } });
+          save(a); closePanel(); render();
+        }));
+      };
+      pn.appendChild(ok); pn.appendChild(chg); pn.appendChild(no);
+    }
+    if (p.who === me.name && (me.parent || p.status === "wait" || p.status === "no")) {
+      var del = el("button", "send alt", "Xóa");
+      del.onclick = function () { save(load().filter(function (x) { return x.id !== p.id; })); closePanel(); render(); };
+      pn.appendChild(del);
+    }
+    var close = el("button", "send alt", "Đóng"); close.onclick = closePanel;
+    pn.appendChild(close);
+  }
+
+  function go(d) { startDate = d; document.getElementById("jump").value = ds(d); closePanel(); render(); }
+  document.getElementById("pd").onclick = function () { go(addDays(startDate, -1)); };
+  document.getElementById("nd").onclick = function () { go(addDays(startDate, 1)); };
+  document.getElementById("pm").onclick = function () { go(addDays(startDate, -span)); };
+  document.getElementById("nm").onclick = function () { go(addDays(startDate, span)); };
+  document.getElementById("tod").onclick = function () { var n = new Date(); go(new Date(n.getFullYear(), n.getMonth(), n.getDate())); };
+  document.getElementById("jump").onchange = function () { if (this.value) go(parse(this.value)); };
+  document.getElementById("spanBtns").addEventListener("click", function (e) {
+    if (e.target.tagName !== "BUTTON") return;
+    span = +e.target.dataset.n; closePanel(); render();
+  });
+
+  function legend() {
+    var l = document.getElementById("legend");
+    l.innerHTML = "";
+    [["#dee2e6", "#495057", "Cố định"], ["#fff8e6", "#fff8e6", "Trống: chạm vào"], ["#fff", "#339af0", "Chờ ba mẹ"],
+     ["#b2f2bb", "#2f9e44", "Được"], ["#ffec99", "#f08c00", "Đổi giờ"], ["#ffe3e3", "#e03131", "Chưa được"]].forEach(function (x) {
+      var s = el("span");
+      var sw = el("span", "sw"); sw.style.background = x[0]; sw.style.borderColor = x[1];
+      s.appendChild(sw); s.appendChild(document.createTextNode(x[2]));
+      l.appendChild(s);
+    });
+  }
+
+  function viewPerson(k) {
+    viewing = k;
+    document.getElementById("schedTitle").textContent = "Lịch của " + k.name + (k.lop ? " · lớp " + k.lop : "");
+    closePanel();
+    render();
+    document.getElementById("calwrap").scrollTop = (SCROLL_TO - T0) / STEP * PX;
+  }
 
   KIDS.forEach(function (k) {
-    var b = document.createElement("button");
-    b.className = "card";
+    var b = el("button", "card");
     b.style.background = k.color;
     b.innerHTML = "<span>" + k.icon + "</span><b></b>";
     b.querySelector("b").textContent = k.name;
     b.onclick = function () {
-      document.getElementById("lichBaMe").style.display = k.parent ? "block" : "none";
-      banner.style.background = k.color;
-      banner.textContent = k.icon + " Góc của " + k.name;
+      me = k;
+      document.getElementById("banner").style.background = k.color;
+      document.getElementById("banner").textContent = k.icon + " Góc của " + k.name;
       nha.style.display = "none";
       goc.className = "open";
+      var n = new Date();
+      startDate = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+      document.getElementById("jump").value = ds(startDate);
+      document.getElementById("viewWho").style.display = k.parent ? "block" : "none";
+      var wb = document.getElementById("whoBtns");
+      wb.innerHTML = "";
+      if (k.parent) {
+        wb.appendChild(choices(KIDS.map(function (x) { return { label: x.name, k: x }; }), function (it) { viewPerson(it.k); }));
+        Array.prototype.forEach.call(wb.firstChild.children, function (c) { if (c.textContent === k.name) c.className = "on"; });
+      }
+      legend();
+      viewPerson(k);
       window.scrollTo(0, 0);
     };
     kidsEl.appendChild(b);
@@ -129,12 +492,11 @@
     nha.style.display = "";
   };
 
-  Array.prototype.forEach.call(document.querySelectorAll(".choices"), function (group) {
-    group.addEventListener("click", function (e) {
-      if (e.target.tagName !== "BUTTON") return;
-      Array.prototype.forEach.call(group.children, function (c) { c.className = ""; });
-      e.target.className = "on";
-    });
+  var gui = document.getElementById("gui");
+  gui.addEventListener("click", function (e) {
+    if (e.target.tagName !== "BUTTON") return;
+    Array.prototype.forEach.call(gui.children, function (c) { c.className = ""; });
+    e.target.className = "on";
   });
 </script>
 </body>
