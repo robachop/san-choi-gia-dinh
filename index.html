@@ -56,6 +56,10 @@
   .prop.s-no { background:#ffe3e3; opacity:.85; text-decoration:line-through; }
   .item { background:#fff; border-radius:12px; padding:10px 12px; margin-top:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .item b { display:block; }
+  .treebig { font-size:3.2rem; line-height:1.1; }
+  #reader p { line-height:1.5; }
+  a.send { display:inline-block; text-decoration:none; }
+  button.send:disabled { opacity:.5; cursor:default; }
   .item.fin b { text-decoration:line-through; opacity:.55; }
   .item.help { border-left:6px solid #e03131; }
   .panel { margin-top:14px; background:#fff; border-radius:14px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,.1); display:none; }
@@ -116,6 +120,15 @@
     </div>
     <p class="legend" id="legend"></p>
     <div class="panel" id="panel"></div>
+
+    <div id="play">
+      <h2>Đọc và chơi lấy điểm</h2>
+      <div class="item" id="pts"></div>
+      <div id="playList"></div>
+      <div class="panel" id="reader"></div>
+      <h2 id="treeTitle">Cây nhỏ</h2>
+      <div class="item" id="tree"></div>
+    </div>
 
     <h2 style="display:none">Con muốn làm gì?</h2>
     <div class="grid" style="display:none">
@@ -188,11 +201,39 @@
     "9B2": [[1, [4, 5], "HĐ trải nghiệm (cô Lan)", null], [2, [4], "HĐ trải nghiệm (cô Lan)", null], [2, [4, 5], "Mỹ thuật (cô Hương)", [0, 2]]],
     "6B2": [[0, [2, 3], "Thể dục (cô An)", null], [1, [4, 5], "Mỹ thuật (cô Hương)", [0, 2]], [2, [2, 3], "HĐ trải nghiệm (cô Vân)", null], [4, [2], "HĐ trải nghiệm (cô Vân)", null]]
   };
+  // Buổi SÁNG theo bảng "TKB khối học kỳ I" áp dụng 09/11/2026. Mỗi ngày T2–T6 có 5 tiết.
+  // Giờ từng tiết là GIẢ ĐỊNH (MORN_TIME) — sửa khi biết giờ thật.
+  var MORN_TIME = [["7:00", "7:45"], ["7:50", "8:35"], ["8:40", "9:25"], ["9:40", "10:25"], ["10:30", "11:15"]];
+  var AM = {
+    "9B2": [
+      ["HĐTN · chào cờ", "Công nghệ (Vân)", "KHTN (Hiền)", "Toán (Mai)", "Nghệ thuật (Duyên)"],
+      ["Văn (Hiếu)", "KHTN (Hiền)", "Tin (Anh)", "Toán (Mai)", "GD địa phương (Diên)"],
+      ["Văn (Hiếu)", "Anh (Thu)", "Sử - Địa (Hiền)", "Toán (Mai)", "Toán (Mai)"],
+      ["KHTN (Lanh)", "KHTN (Lanh)", "Sử - Địa (Hiền)", "Văn (Hiếu)", "Văn (Hiếu)"],
+      ["GD công dân (Duyên)", "Sử - Địa (Uyên)", "Anh (Thu)", "Anh (Thu)", "Sinh hoạt lớp"]
+    ],
+    "6B2": [
+      ["HĐTN · chào cờ", "Nghệ thuật (Duyên)", "KHTN (Lanh)", "KHTN (Lanh)", "Sử - Địa (Tuấn)"],
+      ["Sử - Địa (Tuấn)", "Công nghệ (Vân)", "Văn (Hà)", "Văn (Hà)", "Sử - Địa (Uyên)"],
+      ["KHTN (Lanh)", "KHTN (Lanh)", "Văn (Hà)", "Toán (Vi)", "Toán (Vi)"],
+      ["Anh (Thuỷ)", "Anh (Thuỷ)", "GD công dân (T. Thành)", "Toán (Vi)", "GD địa phương (Duyên)"],
+      ["Anh (Thuỷ)", "Toán (Vi)", "Văn (Hà)", "Tin (Anh)", "Sinh hoạt lớp"]
+    ]
+  };
+  // Tên các môn học trong ngày d (bỏ HĐTN, sinh hoạt), dùng cho việc "Học bài"
+  function subjOf(k, d) {
+    if (!k.lop || !AM[k.lop] || d > 4) return "";
+    var seen = [];
+    AM[k.lop][d].forEach(function (n) {
+      var s = n.replace(/\s*\(.*\)/, "");
+      if (/^HĐTN|^Sinh hoạt/.test(s) || seen.indexOf(s) >= 0) return;
+      seen.push(s);
+    });
+    return seen.length ? ": " + seen.join(", ") : "";
+  }
   function schoolBlocks(k, d, date) {
     var b = [], wk = ((Math.floor(Math.round((date - ART_START) / 86400000) / 7) % 4) + 4) % 4;
-    if (d === 0) { b.push(["7:00", "7:45", "Chào cờ · sinh hoạt dưới cờ"]); b.push(["7:50", k.end, "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]); }
-    else if (d === 4) { b.push(["7:00", "10:25", "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]); b.push(["10:30", k.end, "Sinh hoạt lớp"]); }
-    else b.push([k.start, k.end, "Vào lớp " + k.lop + " (môn: chờ bảng rõ)"]);
+    AM[k.lop][d].forEach(function (name, i) { b.push([MORN_TIME[i][0], MORN_TIME[i][1], name]); });
     SCHOOL[k.lop].forEach(function (it) {
       if (it[0] !== d || (it[3] && it[3].indexOf(wk) < 0)) return;
       b.push([PM_TIME[it[1][0]][0], PM_TIME[it[1][it[1].length - 1]][1], it[2]]);
@@ -275,7 +316,7 @@
   function loadTodo() { try { return JSON.parse(localStorage.getItem(TKEY)) || {}; } catch (e) { return {}; } }
   function saveTodo(o) { try { localStorage.setItem(TKEY, JSON.stringify(o)); } catch (e) {} }
   function todoItems(k, d) {
-    var a = STUDY.slice();
+    var a = [STUDY[0] + subjOf(k, d), STUDY[1] + subjOf(k, (d + 1) % 7), STUDY[2]];
     (k.chores || []).forEach(function (c) { if (!c[3] || c[3].indexOf(d) >= 0) a.push(c[2]); });
     return a;
   }
@@ -301,10 +342,110 @@
     });
   }
 
+  // ===== Bài đọc, trò chơi, điểm thưởng và cây nhỏ =====
+  var PKEY = "sc_pts", READ_PTS = 10, GAME_PTS = 5, FEED_COST = 10;
+  var APP_URL = "https://robachop.github.io/kinh-thanh-quiz/";
+  var STORIES = [
+    { t: "Phần cơm của bà", p: [
+      "Bà ngoại nấu cơm cho cả nhà. Bữa nào bà cũng xới cho các cháu thật đầy, còn bà chỉ ăn nửa chén.",
+      "Bé Na thấy lạ, hỏi: \"Sao bà ăn ít vậy?\" Bà cười: \"Bà no rồi con.\"",
+      "Hôm sau, Na lén chia nửa chén cơm của mình sang chén bà. Bà ngạc nhiên, mắt đỏ hoe. Từ đó cả nhà ăn đủ phần, và ai cũng nhớ hỏi nhau: \"Con đã no chưa?\"",
+      "Yêu thương là để ý đến người đang âm thầm nhường mình." ] },
+    { t: "Cây dù chung", p: [
+      "Chiều mưa, tan học, Tuấn có dù. Cậu thấy bạn Mai không có dù, đứng co ro dưới mái hiên.",
+      "Tuấn muốn chạy về thật nhanh, nhưng cậu nghĩ một chút rồi bước lại: \"Đi chung nha.\"",
+      "Hai bạn ướt một bên vai mà cười suốt đường. Hôm sau, Mai đưa Tuấn một tờ giấy gấp nhỏ, trên đó viết: \"Cảm ơn cây dù chung.\"",
+      "Một việc nhỏ làm cho người khác, có thể làm vui cả một ngày." ] },
+    { t: "Cây bút gãy", p: [
+      "Hai chị em giành nhau cây bút màu đẹp nhất. Giằng qua giằng lại, cây bút gãy làm đôi.",
+      "Chị giận, không nói chuyện với em cả buổi chiều.",
+      "Tối đó, chị thấy cạnh gối có cây bút đã được dán băng keo và một mảnh giấy: \"Xin lỗi chị.\" Chị bật cười. Hai chị em cùng ngồi tô một bức tranh, mỗi người một nửa cây bút.",
+      "Xin lỗi trước, cơn giận sẽ tan nhanh hơn." ] }
+  ];
+  var GAMES = [
+    { t: "Câu đố Kinh Thánh" },
+    { t: "Trò chơi ô chữ" },
+    { t: "Trò chơi Tôi là ai?" }
+  ];
+  var STAGES = [[0, "🌱", "Hạt vừa nảy mầm"], [1, "🌿", "Cây con"], [3, "🪴", "Cây lớn dần"], [6, "🌳", "Cây xanh tốt"], [10, "🍎", "Cây có quả!"]];
+  function loadP() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
+  function saveP(o) { try { localStorage.setItem(PKEY, JSON.stringify(o)); } catch (e) {} }
+  function pOf(o, name) { if (!o[name]) o[name] = { pts: 0, fed: 0, done: {} }; return o[name]; }
+  function earn(key, pts) {
+    var o = loadP(), d = pOf(o, viewing.name), day = ds(new Date());
+    if (d.done[day + "|" + key]) return;
+    d.done[day + "|" + key] = 1; d.pts += pts; saveP(o); renderPlay();
+  }
+  function renderPlay() {
+    var wrap = document.getElementById("play");
+    if (viewing.parent) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+    var own = viewing === me, o = loadP(), d = pOf(o, viewing.name), day = ds(new Date());
+    document.getElementById("pts").innerHTML = "";
+    document.getElementById("pts").appendChild(el("b", "", "⭐ Điểm thưởng: " + d.pts));
+    var list = document.getElementById("playList");
+    list.innerHTML = "";
+    STORIES.forEach(function (s, i) {
+      var it = el("div", "item");
+      it.appendChild(el("b", "", "📖 " + s.t + (d.done[day + "|s" + i] ? "  ✓" : "")));
+      var c = el("div", "choices"), b = el("button", "", "Đọc truyện");
+      b.onclick = function () { openStory(i); };
+      c.appendChild(b); it.appendChild(c); list.appendChild(it);
+    });
+    GAMES.forEach(function (g, i) {
+      var it = el("div", "item");
+      it.appendChild(el("b", "", "🎮 " + g.t + (d.done[day + "|g" + i] ? "  ✓" : "")));
+      var a = el("a", "send alt", "Mở trò chơi");
+      a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
+      it.appendChild(a);
+      if (own) {
+        var done = el("button", "send", d.done[day + "|g" + i] ? "Hôm nay đã nhận điểm" : "Con đã chơi xong (+" + GAME_PTS + ")");
+        done.disabled = !!d.done[day + "|g" + i];
+        done.onclick = function () { earn("g" + i, GAME_PTS); };
+        it.appendChild(done);
+      }
+      list.appendChild(it);
+    });
+    var st = STAGES[0];
+    STAGES.forEach(function (x) { if (d.fed >= x[0]) st = x; });
+    var tr = document.getElementById("tree");
+    tr.innerHTML = "";
+    document.getElementById("treeTitle").textContent = "Cây của " + viewing.name;
+    tr.appendChild(el("div", "treebig", st[1]));
+    tr.appendChild(el("b", "", st[2] + " · đã bón " + d.fed + " lần"));
+    if (own) {
+      var f = el("button", "send good", "Bón cây (−" + FEED_COST + " điểm)");
+      f.disabled = d.pts < FEED_COST;
+      f.onclick = function () {
+        var p = loadP(), q = pOf(p, viewing.name);
+        if (q.pts < FEED_COST) return;
+        q.pts -= FEED_COST; q.fed += 1; saveP(p); renderPlay();
+      };
+      tr.appendChild(f);
+      if (d.pts < FEED_COST) tr.appendChild(el("p", "legend", "Đọc truyện hoặc chơi để có thêm điểm nhé."));
+    }
+  }
+  function openStory(i) {
+    var s = STORIES[i], rd = document.getElementById("reader"), own = viewing === me;
+    rd.className = "panel open"; rd.innerHTML = "";
+    rd.appendChild(el("b", "", s.t));
+    s.p.forEach(function (x) { rd.appendChild(el("p", "", x)); });
+    var o = loadP(), d = pOf(o, viewing.name), got = !!d.done[ds(new Date()) + "|s" + i];
+    if (own) {
+      var b = el("button", "send", got ? "Hôm nay đã nhận điểm" : "Con đã đọc xong (+" + READ_PTS + ")");
+      b.disabled = got;
+      b.onclick = function () { earn("s" + i, READ_PTS); openStory(i); };
+      rd.appendChild(b);
+    }
+    var x = el("button", "send alt", "Đóng"); x.onclick = function () { rd.className = "panel"; rd.innerHTML = ""; };
+    rd.appendChild(x);
+  }
+
   function render() {
     var cal = document.getElementById("cal"), head = document.getElementById("dhead");
     cal.innerHTML = ""; head.innerHTML = "";
     renderTodo();
+    renderPlay();
     cal.style.height = ((T1 - T0) / STEP * PX) + "px";
     var todayS = ds(new Date()), t, i;
     var endDate = addDays(startDate, span - 1);
