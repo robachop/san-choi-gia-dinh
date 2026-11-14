@@ -130,6 +130,28 @@
   .addform .fld { flex:1 1 60%; margin-top:0; min-width:160px; }
   .todoitem b small { display:block; font-weight:400; opacity:.7; font-size:.8rem; }
   .xdel { border:0; background:#ffe3e3; color:#c92a2a; border-radius:50%; width:2rem; height:2rem; font-size:1rem; cursor:pointer; flex:0 0 auto; }
+  #fabNote { position:fixed; right:14px; bottom:14px; z-index:50; border:0; border-radius:999px; background:#e8590c; color:#fff; font:inherit; font-weight:800; padding:12px 18px; box-shadow:0 4px 14px rgba(0,0,0,.3); cursor:pointer; font-size:1.05rem; }
+  #fabNote span { margin-left:8px; }
+  #noteSheet { position:fixed; left:0; right:0; top:0; bottom:0; z-index:60; background:rgba(0,0,0,.45); }
+  .nsbox { position:absolute; left:0; right:0; bottom:0; max-width:760px; margin:0 auto; background:#fff8ee; border-radius:22px 22px 0 0; padding:14px 14px 18px; max-height:86vh; overflow:auto; }
+  .nshead { display:flex; justify-content:space-between; align-items:center; font-size:1.2rem; margin-bottom:6px; }
+  .nshead button { border:0; background:#e9ecef; border-radius:50%; width:2.2rem; height:2.2rem; font-size:1rem; cursor:pointer; }
+  .nsbox textarea { width:100%; font:inherit; padding:10px; border:2px solid #d9d2c3; border-radius:12px; background:#fff; }
+  .noteitem { background:#fff; border-radius:12px; padding:8px 12px; margin-top:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .noteitem small { display:block; opacity:.7; }
+  .noteitem .send { padding:6px 12px; font-size:.9rem; margin:6px 6px 0 0; }
+  .znotes { background:#fff0f6; border-color:#d6336c; }
+  .znotes .zonehead { background:#d6336c; }
+  .verse { margin-top:12px; background:#fff9db; border:3px solid #f59f00; border-radius:18px; padding:10px 14px; }
+  .verse .vh { font-weight:800; color:#e67700; letter-spacing:.04em; }
+  .verse .vr { font-size:1.35rem; font-weight:800; margin:2px 0; }
+  .verse .vt { line-height:1.5; }
+  .verse small { display:block; opacity:.65; margin-top:4px; }
+  .verse .edit { float:right; border:0; background:#ffe8a3; border-radius:10px; padding:4px 10px; font:inherit; cursor:pointer; }
+  .tagline { display:inline-block; margin:0 0 6px; padding:2px 12px; border-radius:999px; font-size:.85rem; font-weight:700; background:#ece8ff; color:#4c2fb5; }
+  .tagline.verseTag { background:#fff3bf; color:#a15c00; }
+  .bdot.bib { border-color:#b197fc; background:#f3f0ff; }
+  .bdot.bib.on { background:var(--ink); border-color:var(--ink); }
   .card { position:relative; }
   .ncount { position:absolute; top:8px; right:10px; min-width:2.1rem; padding:1px 9px; border-radius:999px; background:#e03131; color:#fff; font-style:normal; font-weight:800; font-size:1.2rem; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .ncount.zero { background:#2f9e44; }
@@ -180,6 +202,7 @@
   <section id="goc">
     <button class="back" id="back">← Về nhà chung</button>
     <div class="banner" id="banner"></div>
+    <div id="verseCard"></div>
 
     <div id="viewWho" style="display:none">
       <h2>Xem lịch của ai?</h2>
@@ -223,6 +246,8 @@
       </section>
     </div>
 
+    <section class="zone znotes" id="kidNotes" style="display:none"><div class="zonehead">💬 GHI CHÚ CÁC CON GỬI</div><div id="kidNotesBody"></div></section>
+
     <section class="zone zsync" id="syncZone" style="display:none"><div class="zonehead">☁ ĐỒNG BỘ GIA ĐÌNH</div><div id="syncBody"></div></section>
 
     <section class="zone zpref" id="pref" style="display:none"><div class="zonehead">💡 SỞ THÍCH CÁC CON</div><div id="prefBody"></div></section>
@@ -245,6 +270,8 @@
 
   <p class="note">Bản thử — các con xem thử và nói với ba điều con thích hoặc muốn đổi.<br><span id="syncLine"></span></p>
 </main>
+<button id="fabNote" aria-label="Ghi chú nhanh" style="display:none">📝<span>Ghi chú nhanh</span></button>
+<div id="noteSheet" style="display:none"><div class="nsbox"><div class="nshead"><b>📝 Ghi chú nhanh</b><button id="nsClose" aria-label="Đóng">✕</button></div><div id="nsBody"></div></div></div>
 
 <script>
   // ===== Dữ liệu mẫu (giả định) — sửa tên, màu, giờ học, giờ làm tại đây =====
@@ -552,7 +579,49 @@
       "Dù chỉ đủ che cho một người. Bà nghiêng dù về phía cháu, vai áo bà ướt sũng mà bà vẫn cười: \"Bà không sao.\"",
       "Cháu nắm chặt tay bà, kéo bà sát lại: \"Mình đi sát nhau, bà ướt thì con ướt cùng!\"",
       "Về đến nhà, hai bà cháu cùng hắt xì hơi rồi cùng bật cười. Hôm đó là buổi chiều ấm nhất.",
-      "Tình thương biết nghĩ cho nhau làm cơn mưa cũng trở nên ấm." ] }
+      "Tình thương biết nghĩ cho nhau làm cơn mưa cũng trở nên ấm." ] },
+    { t: "Bạn hay chọc mình", verse: "Lu-ca 6:27", p: [
+      "Mi bị bạn Tú hay chọc vì chiếc cặp đã cũ. Ngày nào Tú cũng gọi Mi bằng cái tên xấu. Mi buồn lắm, và có lúc muốn chọc lại cho bõ.",
+      "Chúa nhật, ở lớp Trường Chúa Nhật, Mi học câu gốc: hãy yêu thương kẻ thù và làm ơn cho người ghét mình. Mi nghĩ thầm: \"Khó quá!\"",
+      "Hôm sau, Tú làm rơi hộp bút. Bút lăn khắp lớp, cả lớp cười ồ lên. Mi cũng suýt cười. Nhưng Mi nhớ câu gốc, cúi xuống, nhặt giúp từng cây bút một.",
+      "Tú đỏ mặt: \"Sao bạn giúp mình? Mình hay chọc bạn mà.\" Mi nhỏ nhẹ: \"Vì Chúa dạy mình thương cả người chưa tốt với mình.\"",
+      "Hôm sau, Tú không chọc Mi nữa, còn khẽ nói: \"Cảm ơn bạn.\" Hai bạn chưa thành bạn thân ngay, nhưng lớp học yên vui hơn nhiều.",
+      "Yêu người khó thương không dễ, nhưng một việc tốt nhỏ có thể làm lòng người mềm lại." ] },
+    { t: "Sa-chê trên cây", bible: "Lu-ca 19:1-10", p: [
+      "Ở thành Giê-ri-cô có ông Sa-chê làm quan thu thuế. Ông giàu, nhưng nhiều người không ưa vì ông thu của dân nhiều hơn quy định.",
+      "Hôm ấy Chúa Giê-xu đi ngang qua thành. Sa-chê rất muốn thấy Ngài, nhưng người đông nghịt mà ông lại thấp bé, đứng sau chẳng thấy gì.",
+      "Ông chạy lên phía trước, trèo lên một cây sung. Từ trên cây, ông nhìn xuống thấy đoàn người đi tới.",
+      "Chúa đến đúng chỗ ấy, ngước lên gọi: \"Sa-chê, xuống mau! Hôm nay Ta phải ở nhà ngươi.\" Sa-chê tụt xuống thật nhanh, vui mừng rước Chúa về nhà.",
+      "Nhiều người xầm xì vì Chúa vào nhà một người mà ai cũng ghét. Nhưng Sa-chê đứng lên nói: \"Thưa Chúa, tôi xin cho người nghèo một nửa tài sản. Ai tôi đã lấy dư, tôi xin trả gấp bốn.\"",
+      "Chúa Giê-xu phán: \"Hôm nay sự cứu đã vào nhà này.\"",
+      "Chúa dạy con: Chúa yêu cả người mà ai cũng ghét. Tình yêu của Ngài làm lòng người thay đổi." ] },
+    { t: "Giô-sép tha anh em", bible: "Sáng-thế Ký 37; 45", p: [
+      "Giô-sép được cha thương nhất nhà. Các anh ghen tức, rồi bán em sang xứ Ai Cập làm nô lệ.",
+      "Nhiều năm sau, Chúa giúp Giô-sép trở thành quan lớn ở Ai Cập, lo việc lương thực. Xứ của các anh bị đói, họ sang Ai Cập xin mua lúa mà không nhận ra em mình.",
+      "Giô-sép khóc, nói: \"Tôi là Giô-sép, em của các anh đây.\" Các anh sợ run, nghĩ em sẽ trả thù.",
+      "Nhưng Giô-sép nói: \"Đừng sợ. Chúa đã sai tôi đi trước để cứu sống nhiều người.\" Rồi ông ôm các anh khóc và tha thứ cho họ.",
+      "Chúa dạy con: Hãy tha thứ cho anh chị em, dù họ từng làm điều xấu với mình. Chúa có thể dùng cả chuyện buồn để làm nên điều tốt." ] },
+    { t: "Người Sa-ma-ri nhân lành", bible: "Lu-ca 10:25-37", p: [
+      "Một thầy dạy luật hỏi Chúa Giê-xu: \"Ai là người lân cận của tôi?\" Chúa kể một câu chuyện.",
+      "Có người đi từ Giê-ru-sa-lem xuống Giê-ri-cô thì bị cướp đánh, lột hết đồ, bỏ nằm bên đường, bị thương nặng.",
+      "Một thầy tế lễ đi ngang, thấy rồi tránh sang bên kia đường. Một người Lê-vi đi qua, cũng làm như vậy.",
+      "Rồi có một người Sa-ma-ri đi tới. Người Do Thái thường không ưa người Sa-ma-ri. Nhưng ông thấy người bị thương thì động lòng thương: băng vết thương, đặt người ấy lên lưng lừa, đưa vào quán trọ, trả tiền nhờ chủ quán chăm sóc.",
+      "Chúa hỏi: \"Ai là người lân cận của người bị cướp?\" Thầy dạy luật đáp: \"Người đã thương xót.\" Chúa phán: \"Hãy đi và làm theo như vậy.\"",
+      "Chúa dạy con: Hãy thương và giúp bất kỳ ai cần mình, dù họ là ai." ] },
+    { t: "Đa-vít tha cho vua Sau-lơ", bible: "1 Sa-mu-ên 24", p: [
+      "Vua Sau-lơ ghen ghét Đa-vít, nên đem ba nghìn quân đi đuổi bắt. Đa-vít phải trốn trong một hang ở nơi hoang vắng.",
+      "Một hôm, chính vua Sau-lơ bước vào hang ấy để nghỉ, mà không biết Đa-vít và người của ông đang ở sâu bên trong.",
+      "Những người theo Đa-vít thì thầm: \"Chúa đã trao kẻ thù vào tay ông. Ra tay đi!\"",
+      "Nhưng Đa-vít chỉ lặng lẽ cắt một góc áo choàng của vua, không làm hại vua. Xong, lòng ông áy náy vì ngay cả việc ấy. Ông nói: \"Tôi không đưa tay hại người Chúa đã chọn làm vua.\"",
+      "Khi vua ra khỏi hang, Đa-vít gọi theo, cúi lạy và giơ góc áo lên: \"Con có thể làm hại vua mà con không làm.\" Vua Sau-lơ nghe thì khóc và nói: \"Con công bình hơn cha.\"",
+      "Chúa dạy con: Khi có dịp trả thù, hãy chọn làm điều lành." ] },
+    { t: "Đa-ni-ên trong hang sư tử", bible: "Đa-ni-ên 6", p: [
+      "Đa-ni-ên là một quan giỏi của vua Đa-ri-út. Mỗi ngày ông cầu nguyện với Chúa ba lần.",
+      "Các quan khác ghen ghét, dụ vua ra một lệnh: trong ba mươi ngày, ai cầu xin với ai ngoài nhà vua thì bị ném vào hang sư tử.",
+      "Đa-ni-ên biết lệnh ấy, nhưng ông vẫn mở cửa sổ, quỳ xuống cầu nguyện với Chúa như mọi ngày. Ông bị bắt. Vua buồn lắm nhưng luật đã ban thì không đổi được. Vua nói: \"Ước gì Chúa của ngươi cứu ngươi.\"",
+      "Cả đêm vua không ngủ được. Sáng sớm, vua chạy ra hang gọi: \"Đa-ni-ên, Chúa ngươi có cứu được ngươi không?\"",
+      "Đa-ni-ên đáp: \"Chúa đã sai thiên sứ ngậm miệng sư tử lại. Tôi không bị hại gì.\" Vua mừng rỡ, cho kéo ông lên.",
+      "Chúa dạy con: Hãy tin cậy và vâng lời Chúa dù gặp khó khăn. Chúa giữ gìn người tin Ngài." ] }
   ];
   var GAMES = [
     { t: "Câu đố Kinh Thánh", d: "Thử trả lời các câu đố về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
@@ -939,6 +1008,8 @@
     wrap.appendChild(el("div", "booktop", "📖 Truyện " + (BOOK_I + 1) + " / " + N));
     var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
     page.appendChild(el("h3", "", s.t));
+    if (s.bible) page.appendChild(el("div", "tagline", "✝ Kinh Thánh · " + s.bible));
+    if (s.verse) page.appendChild(el("div", "tagline verseTag", "📖 Câu gốc tuần này · " + s.verse));
     s.p.forEach(function (x) { page.appendChild(el("p", "", x)); });
     wrap.appendChild(page);
     var got = !!d.done[day + "|s" + BOOK_I], reward = el("div", "reward");
@@ -959,7 +1030,7 @@
     wrap.appendChild(nav);
     var dots = el("div", "bookdots");
     for (i = 0; i < N; i++) (function (j) {
-      var dt = el("button", "bdot" + (j === BOOK_I ? " on" : "") + (d.done[day + "|s" + j] ? " read" : ""), String(j + 1));
+      var dt = el("button", "bdot" + (j === BOOK_I ? " on" : "") + (d.done[day + "|s" + j] ? " read" : "") + (STORIES[j].bible ? " bib" : ""), String(j + 1));
       dt.setAttribute("aria-label", "Truyện " + (j + 1) + ": " + STORIES[j].t);
       dt.onclick = function () { var dr = j > BOOK_I ? 1 : -1; BOOK_I = j; renderBook(dr); };
       dots.appendChild(dt);
@@ -1012,6 +1083,9 @@
     renderPlay();
     renderPref();
     renderSync();
+    renderVerse();
+    renderKidNotes();
+    document.getElementById("fabNote").style.display = (me && !me.parent) ? "block" : "none";
     document.getElementById("addFixed").style.display = canEdit() ? "" : "none";
     buildLayout();
     cal.style.height = LAY.total + "px";
@@ -1210,9 +1284,85 @@
     kidsEl.appendChild(b);
   });
 
+  // ===== Câu gốc tuần này (mỗi bé một thẻ, sửa được) =====
+  var VKEY = "sc_verse";
+  var VERSE_DEFAULT = { "Xoài": { ref: "Lu-ca 6:27", text: "Hãy yêu kẻ thù và làm ơn cho người ghét mình.", note: "Ý chính của câu, ba mẹ có thể sửa lại đúng chữ theo bản Kinh Thánh của lớp." } };
+  function loadV() { try { return JSON.parse(localStorage.getItem(VKEY)) || {}; } catch (e) { return {}; } }
+  function saveV(o) { try { localStorage.setItem(VKEY, JSON.stringify(o)); } catch (e) {} }
+  function renderVerse() {
+    var box = document.getElementById("verseCard");
+    if (!viewing || viewing.parent) { box.innerHTML = ""; return; }
+    var v = loadV()[viewing.name] || VERSE_DEFAULT[viewing.name] || null;
+    box.innerHTML = "";
+    var card = el("div", "verse");
+    if (canEdit()) {
+      var eb = el("button", "edit", "✎ Sửa");
+      eb.onclick = function () {
+        card.innerHTML = "";
+        card.appendChild(el("div", "vh", "📖 CÂU GỐC TUẦN NÀY — sửa"));
+        var r = el("input", "fld"); r.placeholder = "Chỗ Kinh Thánh (ví dụ: Lu-ca 6:27)"; r.value = v ? v.ref : "";
+        var tx = el("textarea", "fld"); tx.rows = 3; tx.placeholder = "Nội dung câu gốc"; tx.value = v ? v.text : "";
+        var ok = el("button", "send good", "Lưu"), no = el("button", "send alt", "Thôi");
+        ok.onclick = function () { var o = loadV(); o[viewing.name] = { ref: r.value.trim(), text: tx.value.trim() }; saveV(o); renderVerse(); };
+        no.onclick = renderVerse;
+        card.appendChild(r); card.appendChild(tx); card.appendChild(ok); card.appendChild(no);
+      };
+      card.appendChild(eb);
+    }
+    card.appendChild(el("div", "vh", "📖 CÂU GỐC TUẦN NÀY"));
+    if (v && (v.ref || v.text)) {
+      card.appendChild(el("div", "vr", v.ref || ""));
+      card.appendChild(el("div", "vt", v.text || ""));
+      if (v.note) card.appendChild(el("small", "", v.note));
+    } else card.appendChild(el("div", "vt", "Chưa có câu gốc. Bấm ✎ Sửa để thêm."));
+    box.appendChild(card);
+  }
+
+  // ===== Ghi chú nhanh: mặc định CHỈ MÌNH CON; bấm 'Gửi ba mẹ' mới đồng bộ =====
+  var NKEY = "sc_notes";
+  function loadN() { try { return JSON.parse(localStorage.getItem(NKEY)) || []; } catch (e) { return []; } }
+  function saveN(a) { try { localStorage.setItem(NKEY, JSON.stringify(a)); } catch (e) {} }
+  function ntime(ts) { var d = new Date(ts); return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function openNote() {
+    if (!me || me.parent) return;
+    var sheet = document.getElementById("noteSheet"), body = document.getElementById("nsBody");
+    sheet.style.display = "block"; body.innerHTML = "";
+    var tx = el("textarea"); tx.rows = 3; tx.maxLength = 300; tx.placeholder = "Con muốn ghi nhớ điều gì? (ví dụ: mai mang sách Toán)";
+    var save = el("button", "send good", "Lưu"), sendP = el("button", "send", "Lưu và gửi ba mẹ");
+    function add(share) {
+      var txt = tx.value.trim(); if (!txt) { tx.focus(); return; }
+      var a = loadN(); a.push({ id: "n" + Date.now() + Math.floor(Math.random() * 1000), who: me.name, text: txt, ts: Date.now(), share: !!share, del: false });
+      saveN(a); openNote();
+    }
+    save.onclick = function () { add(false); }; sendP.onclick = function () { add(true); };
+    body.appendChild(tx); body.appendChild(save); body.appendChild(sendP);
+    body.appendChild(el("p", "legend", "Ghi chú mặc định chỉ mình con thấy trên máy này. Bấm 'Gửi ba mẹ' thì ba mẹ mới thấy."));
+    loadN().filter(function (n) { return n.who === me.name && !n.del; }).sort(function (a, b) { return b.ts - a.ts; }).forEach(function (n) {
+      var it = el("div", "noteitem");
+      it.appendChild(el("div", "", n.text));
+      it.appendChild(el("small", "", ntime(n.ts) + (n.share ? " · 📤 đã gửi ba mẹ" : " · 🔒 chỉ mình con")));
+      if (!n.share) { var sb = el("button", "send alt", "📤 Gửi ba mẹ"); sb.onclick = function () { var a = loadN(); a.forEach(function (x) { if (x.id === n.id) x.share = true; }); saveN(a); openNote(); }; it.appendChild(sb); }
+      var db = el("button", "send bad", "Xóa"); db.onclick = function () { var a = loadN(); a.forEach(function (x) { if (x.id === n.id) x.del = true; }); saveN(a); openNote(); };
+      it.appendChild(db);
+      body.appendChild(it);
+    });
+  }
+  function closeNote() { document.getElementById("noteSheet").style.display = "none"; }
+  document.getElementById("fabNote").onclick = openNote;
+  document.getElementById("nsClose").onclick = closeNote;
+  document.getElementById("noteSheet").addEventListener("click", function (e) { if (e.target === this) closeNote(); });
+  function renderKidNotes() {
+    var wrap = document.getElementById("kidNotes"), box = document.getElementById("kidNotesBody");
+    if (!viewing || !viewing.parent) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block"; box.innerHTML = "";
+    var list = loadN().filter(function (n) { return n.share && !n.del; }).sort(function (a, b) { return b.ts - a.ts; });
+    if (!list.length) { box.appendChild(el("p", "legend", "Chưa có ghi chú nào các con gửi. Ghi chú mặc định chỉ riêng mình bé; bé bấm 'Gửi ba mẹ' thì hiện ở đây.")); return; }
+    list.forEach(function (n) { var it = el("div", "noteitem"); it.appendChild(el("div", "", n.text)); it.appendChild(el("small", "", n.who + " · " + ntime(n.ts))); box.appendChild(it); });
+  }
+
   // ===== Đồng bộ giữa các máy qua Google Sheet + Apps Script (xem apps-script/Code.gs) =====
   // Mỗi mục dữ liệu = 1 bản ghi {k, u, v}; bản có u (mốc thời gian) mới hơn thắng. Chỉ gửi phần thay đổi.
-  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM };
+  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM, N: saveN, V: saveV };
   var SYNC = { msg: "", timer: null, busy: false };
   function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -1229,6 +1379,8 @@
     Object.keys(P).forEach(function (w) { rec["p|" + w] = JSON.stringify(P[w]); });
     C.forEach(function (p) { rec["c|" + p.id] = JSON.stringify(p); });
     loadM().forEach(function (m) { rec["m|" + m.id] = JSON.stringify(m); });
+    loadN().forEach(function (n) { if (n.share) rec["n|" + n.id] = JSON.stringify(n); });
+    var VV = loadV(); Object.keys(VV).forEach(function (w) { rec["v|" + w] = JSON.stringify(VV[w]); });
     return rec;
   }
   function syncApply(k, v) {
@@ -1240,6 +1392,13 @@
       else { var W = loadW(); (W[w] = W[w] || {})[key] = JSON.parse(v); RAW.W(W); }
     } else if (ty === "t") { var T = loadTodo(); T[rest] = v; RAW.T(T); }
     else if (ty === "p") { var P = loadP(); P[rest] = JSON.parse(v); RAW.P(P); }
+    else if (ty === "n") {
+      var no = JSON.parse(v), na = loadN(), nh = false;
+      na.forEach(function (x, j) { if (x.id === no.id) { na[j] = no; nh = true; } });
+      if (!nh) na.push(no);
+      RAW.N(na);
+    }
+    else if (ty === "v") { var V2 = loadV(); V2[rest] = JSON.parse(v); RAW.V(V2); }
     else if (ty === "m") {
       var mo = JSON.parse(v), ma = loadM(), mh = false;
       ma.forEach(function (x, j) { if (x.id === mo.id) { ma[j] = mo; mh = true; } });
@@ -1298,6 +1457,8 @@
   saveP = function (o) { RAW.P(o); scheduleSync(); };
   save = function (a) { RAW.C(a); scheduleSync(); };
   saveM = function (a) { RAW.M(a); scheduleSync(); };
+  saveN = function (a) { RAW.N(a); scheduleSync(); };
+  saveV = function (o) { RAW.V(o); scheduleSync(); };
   function renderSync() {
     var wrap = document.getElementById("syncZone"), box = document.getElementById("syncBody");
     if (!viewing || !viewing.parent) { if (wrap) wrap.style.display = "none"; return; }
@@ -1324,6 +1485,7 @@
 
   renderHomeVine();
   document.getElementById("back").onclick = function () {
+    document.getElementById("fabNote").style.display = "none"; closeNote();
     renderHomeVine();
     goc.className = "";
     nha.style.display = "";
