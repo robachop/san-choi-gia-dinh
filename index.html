@@ -83,10 +83,11 @@
 
     <h2>Nhà chung</h2>
     <div class="grid">
-      <div class="tile"><span>📖</span>Bài đọc<small>Đức Tin Sống Động</small></div>
-      <div class="tile"><span>❓</span>Câu đố<small>Chơi cùng nhau</small></div>
-      <div class="tile"><span>🌳</span>Cây bạn nhỏ<small>Chăm mỗi ngày</small></div>
+      <div class="tile" id="tRead" style="cursor:pointer"><span>📖</span>Bài đọc<small>3 truyện ngắn</small></div>
+      <div class="tile" id="tQuiz" style="cursor:pointer"><span>❓</span>Câu đố<small>Câu đố · ô chữ · tôi là ai</small></div>
+      <div class="tile" id="tTree" style="cursor:pointer"><span>🌳</span>Cây nhỏ<small>Cây của cả nhà</small></div>
     </div>
+    <div class="panel" id="homePanel"></div>
   </section>
 
   <section id="goc">
@@ -425,6 +426,48 @@
       if (d.pts < FEED_COST) tr.appendChild(el("p", "legend", "Đọc truyện hoặc chơi để có thêm điểm nhé."));
     }
   }
+  // ----- Nhà chung (trang đầu): bài đọc, câu đố, cây của cả nhà -----
+  function homeOpen() { var p = document.getElementById("homePanel"); p.className = "panel open"; p.innerHTML = ""; return p; }
+  function homeClose(p) { var x = el("button", "send alt", "Đóng"); x.onclick = function () { p.className = "panel"; p.innerHTML = ""; }; p.appendChild(x); }
+  function homeRead(i) {
+    var p = homeOpen();
+    if (i === undefined) {
+      p.appendChild(el("b", "", "📖 Chọn một truyện"));
+      var c = el("div", "choices");
+      STORIES.forEach(function (s, j) { var b = el("button", "", s.t); b.onclick = function () { homeRead(j); }; c.appendChild(b); });
+      p.appendChild(c);
+      p.appendChild(el("p", "legend", "Muốn nhận điểm thưởng, vào góc của con rồi đọc ở đó."));
+    } else {
+      p.appendChild(el("b", "", STORIES[i].t));
+      STORIES[i].p.forEach(function (x) { p.appendChild(el("p", "", x)); });
+      var back = el("button", "send alt", "← Các truyện"); back.onclick = function () { homeRead(); }; p.appendChild(back);
+    }
+    homeClose(p);
+  }
+  function homeQuiz() {
+    var p = homeOpen();
+    p.appendChild(el("b", "", "❓ Chọn trò chơi"));
+    GAMES.forEach(function (g) {
+      var a = el("a", "send", g.t); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a);
+    });
+    homeClose(p);
+  }
+  function homeTree() {
+    var p = homeOpen(), o = loadP();
+    p.appendChild(el("b", "", "🌳 Cây của cả nhà"));
+    KIDS.forEach(function (k) {
+      if (k.parent) return;
+      var d = o[k.name] || { pts: 0, fed: 0 }, st = STAGES[0];
+      STAGES.forEach(function (x) { if (d.fed >= x[0]) st = x; });
+      p.appendChild(el("p", "", k.icon + " " + k.name + ": " + st[1] + " " + st[2] + " · bón " + d.fed + " lần · ⭐ " + d.pts));
+    });
+    p.appendChild(el("p", "legend", "Vào góc của con để đọc truyện, chơi và bón cây."));
+    homeClose(p);
+  }
+  document.getElementById("tRead").onclick = function () { homeRead(); };
+  document.getElementById("tQuiz").onclick = homeQuiz;
+  document.getElementById("tTree").onclick = homeTree;
+
   function openStory(i) {
     var s = STORIES[i], rd = document.getElementById("reader"), own = viewing === me;
     rd.className = "panel open"; rd.innerHTML = "";
