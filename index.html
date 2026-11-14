@@ -278,13 +278,13 @@
   var KIDS = [
     { name: "Tín", color: "#e8590c", icon: "🍉", lop: "9B2", start: "7:00", end: "11:15",
       // Việc nhà được giao (ngày và giờ là GIẢ ĐỊNH; ngày: 0=T2 ... 5=T7, 6=CN) — sửa tại đây
-      chores: [["17:30", "18:00", "Giặt quần áo", [0, 2, 4]], ["10:00", "10:30", "Rửa nhà vệ sinh", [5]], ["10:30", "11:00", "Rửa nhà tắm", [5]], ["16:00", "16:30", "Đốt rác", [6]], ["20:30", "21:00", "Xếp quần áo"]] },
+      chores: [["17:30", "18:00", "Giặt quần áo", [0, 2, 4]], ["10:00", "10:30", "Rửa nhà vệ sinh", [5]], ["10:30", "11:00", "Rửa nhà tắm", [5]], ["16:00", "16:30", "Đốt rác", [6]], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
     { name: "Nho", color: "#7048e8", icon: "🍇", lop: "6B2", start: "7:00", end: "11:15",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
-      chores: [["17:30", "17:45", "Cho chó ăn"], ["19:30", "19:50", "Rửa chén"], ["19:50", "20:00", "Úp chén"], ["20:00", "20:20", "Dọn bếp"], ["20:30", "21:00", "Xếp quần áo"]] },
-    { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", start: "7:00", end: "9:50",
+      chores: [["17:30", "17:45", "Cho chó ăn"], ["19:30", "19:50", "Rửa chén"], ["19:50", "20:00", "Úp chén"], ["20:00", "20:20", "Dọn bếp"], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
+    { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", start: "7:00", end: "10:30",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
-      chores: [["17:30", "17:45", "Quét phòng khách"], ["17:45", "18:00", "Quét phòng ngủ"], ["18:00", "18:15", "Quét nhà giữa"], ["19:30", "19:45", "Dọn bàn ăn"], ["20:30", "21:00", "Xếp quần áo"]] },
+      chores: [["17:30", "17:45", "Quét phòng khách"], ["17:45", "18:00", "Quét phòng ngủ"], ["18:00", "18:15", "Quét nhà giữa"], ["19:30", "19:45", "Dọn bàn ăn"], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
     { name: "Ba", color: "#495057", icon: "🧔", parent: true, start: "7:30", back: "17:30" },
     { name: "Mẹ", color: "#c2255c", icon: "👩", parent: true, start: "8:00", back: "17:00" }
   ];
@@ -345,9 +345,9 @@
     ]
   };
   // ----- Xoài, lớp 3B2, Trường Tiểu học Tân Phúc 1: TKB HKI 2026-2027 (áp dụng từ tuần 10). Sáng 4 tiết, chiều 3 tiết (T2–T5).
-  // Giờ từng tiết là GIẢ ĐỊNH (tiết 35 phút) — sửa MORN_BY / PM_BY khi biết giờ thật. Ký hiệu trong bảng: bs = bổ sung; (T), (N) chưa rõ nghĩa nên giữ nguyên.
-  var MORN_BY = { "3B2": [["7:00", "7:35"], ["7:40", "8:15"], ["8:35", "9:10"], ["9:15", "9:50"]] };
-  var PM_BY = { "3B2": { 1: ["13:30", "14:05"], 2: ["14:10", "14:45"], 3: ["14:50", "15:25"] } };
+  // Giờ từng tiết là GIẢ ĐỊNH (tiết 45 phút; nghỉ giữa giờ và nghỉ ra chơi là giả định) — sửa MORN_BY / PM_BY khi biết giờ thật. Ký hiệu trong bảng: bs = bổ sung; (T), (N) chưa rõ nghĩa nên giữ nguyên.
+  var MORN_BY = { "3B2": [["7:00", "7:45"], ["7:50", "8:35"], ["8:55", "9:40"], ["9:45", "10:30"]] };
+  var PM_BY = { "3B2": { 1: ["13:30", "14:15"], 2: ["14:20", "15:05"], 3: ["15:10", "15:55"] } };
   AM["3B2"] = [
     ["HĐTN", "Tiếng Việt", "Tiếng Việt", "Tiếng Anh"],
     ["Mĩ thuật", "Tiếng Việt", "Toán", "Tiếng Việt"],
@@ -1348,20 +1348,19 @@
     var sheet = document.getElementById("noteSheet"), body = document.getElementById("nsBody");
     sheet.style.display = "block"; body.innerHTML = "";
     var tx = el("textarea"); tx.rows = 3; tx.maxLength = 300; tx.placeholder = "Con muốn ghi nhớ điều gì? (ví dụ: mai mang sách Toán)";
-    var save = el("button", "send good", "Lưu"), sendP = el("button", "send", "Lưu và gửi ba mẹ");
+    var save = el("button", "send good", "Lưu");
     function add(share) {
       var txt = tx.value.trim(); if (!txt) { tx.focus(); return; }
-      var a = loadN(); a.push({ id: "n" + Date.now() + Math.floor(Math.random() * 1000), who: me.name, text: txt, ts: Date.now(), share: !!share, del: false });
+      var a = loadN(); a.push({ id: "n" + Date.now() + Math.floor(Math.random() * 1000), who: me.name, text: txt, ts: Date.now(), share: true, del: false });
       saveN(a); openNote();
     }
-    save.onclick = function () { add(false); }; sendP.onclick = function () { add(true); };
-    body.appendChild(tx); body.appendChild(save); body.appendChild(sendP);
-    body.appendChild(el("p", "legend", "Ghi chú mặc định chỉ mình con thấy trên máy này. Bấm 'Gửi ba mẹ' thì ba mẹ mới thấy."));
+    save.onclick = function () { add(true); };
+    body.appendChild(tx); body.appendChild(save);
+    body.appendChild(el("p", "legend", "Bấm Lưu: ghi chú nằm ở đây để con đọc lại, và tự gửi cho ba mẹ."));
     loadN().filter(function (n) { return n.who === me.name && !n.del; }).sort(function (a, b) { return b.ts - a.ts; }).forEach(function (n) {
       var it = el("div", "noteitem");
       it.appendChild(el("div", "", n.text));
-      it.appendChild(el("small", "", ntime(n.ts) + (n.share ? " · 📤 đã gửi ba mẹ" : " · 🔒 chỉ mình con")));
-      if (!n.share) { var sb = el("button", "send alt", "📤 Gửi ba mẹ"); sb.onclick = function () { var a = loadN(); a.forEach(function (x) { if (x.id === n.id) x.share = true; }); saveN(a); openNote(); }; it.appendChild(sb); }
+      it.appendChild(el("small", "", ntime(n.ts) + " · 📤 ba mẹ đã nhận"));
       var db = el("button", "send bad", "Xóa"); db.onclick = function () { var a = loadN(); a.forEach(function (x) { if (x.id === n.id) x.del = true; }); saveN(a); openNote(); };
       it.appendChild(db);
       body.appendChild(it);
@@ -1375,8 +1374,8 @@
     var wrap = document.getElementById("kidNotes"), box = document.getElementById("kidNotesBody");
     if (!viewing || !viewing.parent) { wrap.style.display = "none"; return; }
     wrap.style.display = "block"; box.innerHTML = "";
-    var list = loadN().filter(function (n) { return n.share && !n.del; }).sort(function (a, b) { return b.ts - a.ts; });
-    if (!list.length) { box.appendChild(el("p", "legend", "Chưa có ghi chú nào các con gửi. Ghi chú mặc định chỉ riêng mình bé; bé bấm 'Gửi ba mẹ' thì hiện ở đây.")); return; }
+    var list = loadN().filter(function (n) { return !n.del; }).sort(function (a, b) { return b.ts - a.ts; });
+    if (!list.length) { box.appendChild(el("p", "legend", "Chưa có ghi chú nào các con gửi. Bé bấm Lưu ghi chú thì hiện ở đây.")); return; }
     list.forEach(function (n) { var it = el("div", "noteitem"); it.appendChild(el("div", "", n.text)); it.appendChild(el("small", "", n.who + " · " + ntime(n.ts))); box.appendChild(it); });
   }
 
@@ -1399,7 +1398,7 @@
     Object.keys(P).forEach(function (w) { rec["p|" + w] = JSON.stringify(P[w]); });
     C.forEach(function (p) { rec["c|" + p.id] = JSON.stringify(p); });
     loadM().forEach(function (m) { rec["m|" + m.id] = JSON.stringify(m); });
-    loadN().forEach(function (n) { if (n.share) rec["n|" + n.id] = JSON.stringify(n); });
+    loadN().forEach(function (n) { rec["n|" + n.id] = JSON.stringify(n); });
     var VV = loadV(); Object.keys(VV).forEach(function (w) { rec["v|" + w] = JSON.stringify(VV[w]); });
     return rec;
   }
