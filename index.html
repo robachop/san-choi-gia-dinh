@@ -152,8 +152,8 @@
     <div id="play">
       <h2>Đọc và chơi lấy điểm</h2>
       <div class="item" id="pts"></div>
-      <div id="playList"></div>
       <div class="panel" id="reader"></div>
+      <div id="playList"></div>
       <h2 id="treeTitle">Cây nhỏ</h2>
       <div class="item" id="tree"></div>
     </div>
@@ -729,7 +729,7 @@
   function openStory(i) {
     var s = STORIES[i], rd = document.getElementById("reader"), own = viewing === me;
     rd.className = "panel open"; rd.innerHTML = "";
-    rd.appendChild(el("b", "", s.t));
+    rd.appendChild(el("b", "", "📖 " + s.t));
     s.p.forEach(function (x) { rd.appendChild(el("p", "", x)); });
     var o = loadP(), d = pOf(o, viewing.name), got = !!d.done[ds(new Date()) + "|s" + i];
     rd.appendChild(starRow("s" + i, own, function () { openStory(i); renderPlay(); }));
@@ -741,6 +741,7 @@
     }
     var x = el("button", "send alt", "Đóng"); x.onclick = function () { rd.className = "panel"; rd.innerHTML = ""; };
     rd.appendChild(x);
+    rd.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // ----- Thu gọn khung giờ ngủ/đêm để bớt chiếm chỗ -----
