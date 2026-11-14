@@ -69,6 +69,61 @@
   .tsel.s3 { border-color:#e03131; background:#ffe3e3; }
   @keyframes sway { 0%,100% { transform:rotate(-1.4deg); } 50% { transform:rotate(1.4deg); } }
   @media (prefers-reduced-motion: reduce) { svg g { animation:none !important; } }
+  .bookwrap { perspective:1400px; margin-top:8px; }
+  .booktop { font-weight:700; margin:0 0 6px 4px; opacity:.8; }
+  .page { background:#fffdf4; border-radius:6px 16px 16px 6px; border-left:10px solid #c9a56b; box-shadow:0 3px 10px rgba(0,0,0,.18), inset 14px 0 14px -14px rgba(0,0,0,.25); padding:16px 18px 14px; min-height:260px; transform-origin:left center; }
+  .page h3 { margin:0 0 10px; font-size:1.4rem; text-align:center; color:#7a4b22; }
+  .page p { line-height:1.65; margin:10px 0; font-size:1.05rem; }
+  .page.next { animation:flipNext .55s ease; }
+  .page.prev { transform-origin:right center; animation:flipPrev .55s ease; }
+  @keyframes flipNext { from { transform:rotateY(-75deg); opacity:.25; } to { transform:rotateY(0); opacity:1; } }
+  @keyframes flipPrev { from { transform:rotateY(75deg); opacity:.25; } to { transform:rotateY(0); opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .page.next, .page.prev { animation:none; } }
+  .reward { margin-top:10px; background:#fff; border-radius:12px; padding:10px 12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .reward .send { margin:0 8px 4px 0; }
+  .booknav { display:flex; gap:10px; margin-top:10px; }
+  .booknav .send { flex:1; margin:0; padding:14px 8px; }
+  .bookdots { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:10px; }
+  .bdot { width:2.2rem; height:2.2rem; border-radius:50%; border:2px solid #d9d2c3; background:#fff; font:inherit; font-size:.85rem; cursor:pointer; }
+  .bdot.read { background:#d3f9d8; border-color:#2f9e44; }
+  .bdot.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .fold > summary { list-style:none; cursor:pointer; background:#fff; border-radius:14px; padding:2px 14px; margin-top:14px; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+  .fold > summary::-webkit-details-marker { display:none; }
+  .fold > summary h2 { display:block; margin:10px 0; }
+  .fold > summary h2::before { content:"▸ "; }
+  .fold[open] > summary h2::before { content:"▾ "; }
+  .zone { margin-top:26px; border-radius:22px; padding:0 12px 14px; border:3px solid; }
+  .zonehead { margin:0 -12px 8px; padding:12px 14px; border-radius:18px 18px 0 0; color:#fff; font-weight:800; font-size:1.35rem; letter-spacing:.04em; text-align:center; }
+  .zread { background:#fff1d6; border-color:#e8a33d; }
+  .zread .zonehead { background:#e8a33d; }
+  .zgame { background:#ece8ff; border-color:#7048e8; }
+  .zgame .zonehead { background:#7048e8; }
+  .zgame .page { border-left-color:#7048e8; background:#fbfaff; }
+  .zgame .page h3 { color:#4c2fb5; }
+  .zgame .page .send { background:#7048e8; }
+  .zgame .bdot.on { background:#7048e8; border-color:#7048e8; }
+  .ztree { background:#e3f8e6; border-color:#2f9e44; }
+  .ztree .zonehead { background:#2f9e44; }
+  .subhead { font-weight:700; margin:6px 4px; }
+  .fold.zone { padding:0 12px 12px; margin-top:26px; }
+  .fold.zone:not([open]) { padding-bottom:0; }
+  .fold.zone > summary { margin:0 -12px; padding:2px 14px; border-radius:18px 18px 0 0; box-shadow:none; color:#fff; }
+  .fold.zone:not([open]) > summary { border-radius:18px; }
+  .fold.zone > summary h2 { color:#fff; font-size:1.2rem; }
+  .ztodo { background:#ffe8e8; border-color:#e03131; }
+  .ztodo > summary { background:#e03131; }
+  .ztodo > summary h2::before { content:"▸ 📝 "; }
+  .ztodo[open] > summary h2::before { content:"▾ 📝 "; }
+  .zsched { background:#e3f1ff; border-color:#339af0; }
+  .zsched > summary { background:#339af0; }
+  .zsched > summary h2::before { content:"▸ 📅 "; }
+  .zsched[open] > summary h2::before { content:"▾ 📅 "; }
+  .zpref { background:#e6fcf5; border-color:#12b886; }
+  .zpref .zonehead { background:#12b886; }
+  .whyrow { margin-top:8px; }
+  .whyrow .choices button { padding:6px 12px; font-size:.95rem; }
+  .whyrow .choices button.on { background:#12b886; border-color:#12b886; color:#fff; }
+  .prefline { margin:6px 0; line-height:1.5; }
   .card { position:relative; }
   .ncount { position:absolute; top:8px; right:10px; min-width:2.1rem; padding:1px 9px; border-radius:999px; background:#e03131; color:#fff; font-style:normal; font-weight:800; font-size:1.2rem; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .ncount.zero { background:#2f9e44; }
@@ -125,12 +180,13 @@
       <div class="choices" id="whoBtns"></div>
     </div>
 
-    <div id="todo">
-      <h2 id="todoTitle">Việc cần làm</h2>
+    <details id="todo" class="fold zone ztodo">
+      <summary><h2 id="todoTitle">Việc cần làm</h2></summary>
       <div id="todoList"></div>
-    </div>
+    </details>
 
-    <h2 id="schedTitle">Lịch</h2>
+    <details id="schedWrap" class="fold zone zsched">
+    <summary><h2 id="schedTitle">Lịch</h2></summary>
     <div class="nav">
       <button id="pm" title="Lùi cả khối ngày đang xem">«</button>
       <button id="pd" title="Lùi 1 ngày">‹</button>
@@ -148,15 +204,20 @@
     </div>
     <p class="legend" id="legend"></p>
     <div class="panel" id="panel"></div>
+    </details>
 
     <div id="play">
       <h2>Đọc và chơi lấy điểm</h2>
       <div class="item" id="pts"></div>
-      <div class="panel" id="reader"></div>
-      <div id="playList"></div>
-      <h2 id="treeTitle">Cây nhỏ</h2>
-      <div class="item" id="tree"></div>
+      <section class="zone zread"><div class="zonehead">📖 ĐỌC TRUYỆN</div><div id="book"></div></section>
+      <section class="zone zgame"><div class="zonehead">🎮 CHƠI TRÒ CHƠI</div><div id="gbook"></div></section>
+      <section class="zone ztree"><div class="zonehead">🍇 CÂY NHO</div>
+        <div class="subhead" id="treeTitle">Cây nho</div>
+        <div class="item" id="tree"></div>
+      </section>
     </div>
+
+    <section class="zone zpref" id="pref" style="display:none"><div class="zonehead">💡 SỞ THÍCH CÁC CON</div><div id="prefBody"></div></section>
 
     <h2 style="display:none">Con muốn làm gì?</h2>
     <div class="grid" style="display:none">
@@ -377,8 +438,9 @@
     if (viewing.parent) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
     box.innerHTML = "";
-    document.getElementById("todoTitle").textContent = "Việc cần làm — " + dlabel(startDate);
-    var st = loadTodo(), day = ds(startDate);
+    var st = loadTodo(), day = ds(startDate), left = 0;
+    todoItems(viewing, wd(startDate)).forEach(function (label) { if ((st[viewing.name + "|" + day + "|" + label] || TSTAT[0]) !== "Xong") left++; });
+    document.getElementById("todoTitle").textContent = "Việc cần làm — " + dlabel(startDate) + (left ? " · còn " + left : " · xong hết ✓");
     todoItems(viewing, wd(startDate)).forEach(function (label) {
       var key = viewing.name + "|" + day + "|" + label, cur = st[key] || TSTAT[0];
       var it = el("div", "item todoitem" + (cur === "Xong" ? " fin" : "") + (cur === "Cần giúp" ? " help" : ""));
@@ -453,9 +515,9 @@
       "Tình thương biết nghĩ cho nhau làm cơn mưa cũng trở nên ấm." ] }
   ];
   var GAMES = [
-    { t: "Câu đố Kinh Thánh" },
-    { t: "Trò chơi ô chữ" },
-    { t: "Trò chơi Tôi là ai?" }
+    { t: "Câu đố Kinh Thánh", d: "Thử trả lời các câu đố về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
+    { t: "Trò chơi ô chữ", d: "Giải ô chữ để học thêm về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
+    { t: "Trò chơi Tôi là ai?", d: "Đoán xem nhân vật là ai qua các gợi ý. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." }
   ];
   var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
   function loadP() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
@@ -473,30 +535,8 @@
     var own = viewing === me, o = loadP(), d = pOf(o, viewing.name), day = ds(new Date());
     document.getElementById("pts").innerHTML = "";
     document.getElementById("pts").appendChild(el("b", "", "⭐ Điểm thưởng: " + d.pts));
-    var list = document.getElementById("playList");
-    list.innerHTML = "";
-    STORIES.forEach(function (s, i) {
-      var it = el("div", "item");
-      it.appendChild(el("b", "", "📖 " + s.t + (d.done[day + "|s" + i] ? "  ✓" : "")));
-      var c = el("div", "choices"), b = el("button", "", "Đọc truyện");
-      b.onclick = function () { openStory(i); };
-      c.appendChild(b); it.appendChild(c); it.appendChild(starRow("s" + i, own, renderPlay)); list.appendChild(it);
-    });
-    GAMES.forEach(function (g, i) {
-      var it = el("div", "item");
-      it.appendChild(el("b", "", "🎮 " + g.t + (d.done[day + "|g" + i] ? "  ✓" : "")));
-      var a = el("a", "send alt", "Mở trò chơi");
-      a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
-      it.appendChild(a);
-      if (own) {
-        var done = el("button", "send", d.done[day + "|g" + i] ? "Hôm nay đã nhận điểm" : "Con đã chơi xong (+" + GAME_PTS + ")");
-        done.disabled = !!d.done[day + "|g" + i];
-        done.onclick = function () { earn("g" + i, GAME_PTS); };
-        it.appendChild(done);
-      }
-      it.appendChild(starRow("g" + i, own, renderPlay));
-      list.appendChild(it);
-    });
+    renderBook();
+    renderGameBook();
     var st = STAGES[0];
     STAGES.forEach(function (x) { if (d.fed >= x[0]) st = x; });
     var tr = document.getElementById("tree");
@@ -564,6 +604,9 @@
     }
     var x = el("button", "send alt", "Đóng"); x.onclick = closePanel; pn.appendChild(x); pn.appendChild(msg);
   }
+  document.getElementById("schedWrap").addEventListener("toggle", function () {
+    if (this.open) document.getElementById("calwrap").scrollTop = ypos(SCROLL_TO);
+  });
   document.getElementById("toggleNight").onclick = function () { SHOW_ALL = !SHOW_ALL; render(); };
   document.getElementById("addFixed").onclick = function () { openFixed(null, ds(startDate), wd(startDate)); };
 
@@ -590,6 +633,7 @@
   }
 
   // ----- Cây nho: 1 gốc chung, 3 nhánh (mỗi bé một nhánh), lớn lên theo số lần bón -----
+  var VINE_N = 0;
   function vineHTML(hi) {
     var o = loadP(), kids = KIDS.filter(function (k) { return !k.parent; }), total = 0, s = "";
     kids.forEach(function (k) { total += (o[k.name] || {}).fed || 0; });
@@ -666,7 +710,84 @@
       s += '</g>';
     });
     s += '<text x="36" y="168" font-size="20">🦋</text><text x="318" y="200" font-size="17">🐝</text>';
-    return '<svg viewBox="0 0 360 320" role="img" aria-label="Cây nho ba nhánh chung một gốc" style="width:100%;max-width:480px;display:block;margin:0 auto;border-radius:22px;box-shadow:0 2px 8px rgba(0,0,0,.12)">' + defs + s + '</svg>';
+    var uid = "_" + (++VINE_N);
+    return ('<svg viewBox="0 0 360 320" role="img" aria-label="Cây nho ba nhánh chung một gốc" style="width:100%;max-width:480px;display:block;margin:0 auto;border-radius:22px;box-shadow:0 2px 8px rgba(0,0,0,.12)">' + defs + s + '</svg>').replace(/v(Sky|Ground|Bark)/g, "v$1" + uid);
+  }
+
+  // ----- Vì sao con thích? (chọn nhanh sau khi tặng sao) -----
+  var WKEY = "sc_why";
+  var WHY_S = ["Vui", "Cảm động", "Học được điều hay", "Hồi hộp", "Buồn cười"];
+  var WHY_G = ["Vui", "Hơi khó", "Học được nhiều", "Muốn chơi nữa"];
+  function loadW() { try { return JSON.parse(localStorage.getItem(WKEY)) || {}; } catch (e) { return {}; } }
+  function saveW(o) { try { localStorage.setItem(WKEY, JSON.stringify(o)); } catch (e) {} }
+  function whyRow(key, own, after) {
+    var star = (loadR()[viewing.name] || {})[key] || 0, row = el("div", "whyrow");
+    if (!star) return row;
+    var cur = (loadW()[viewing.name] || {})[key] || [];
+    row.appendChild(el("small", "", own ? "Vì sao con thích? (chọn được nhiều)" : "Lý do bé chọn:"));
+    var box = el("div", "choices");
+    (key.charAt(0) === "s" ? WHY_S : WHY_G).forEach(function (w) {
+      var b = el("button", cur.indexOf(w) >= 0 ? "on" : "", w);
+      b.disabled = !own;
+      b.onclick = function () {
+        var o = loadW(), a = (o[viewing.name] = o[viewing.name] || {})[key] || [], p = a.indexOf(w);
+        if (p >= 0) a.splice(p, 1); else a.push(w);
+        o[viewing.name][key] = a; saveW(o); after();
+      };
+      box.appendChild(b);
+    });
+    row.appendChild(box);
+    return row;
+  }
+
+  // ----- Trang "Sở thích của các con" (góc Ba/Mẹ) -----
+  function itemName(key) { var n = +key.slice(1); return key.charAt(0) === "s" ? STORIES[n].t : "🎮 " + GAMES[n].t; }
+  function tally(arr) {
+    var c = {}; arr.forEach(function (x) { c[x] = (c[x] || 0) + 1; });
+    return Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).map(function (k) { return k + " ×" + c[k]; }).join(", ");
+  }
+  function renderPref() {
+    var wrap = document.getElementById("pref"), box = document.getElementById("prefBody");
+    if (!viewing.parent) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block"; box.innerHTML = "";
+    var R = loadR(), W = loadW(), kids = KIDS.filter(function (k) { return !k.parent; }), any = false;
+    kids.forEach(function (k) {
+      var r = R[k.name] || {}, keys = Object.keys(r).filter(function (x) { return /^[sg]\d+$/.test(x); });
+      if (!keys.length) { box.appendChild(el("p", "prefline", k.icon + " " + k.name + ": chưa đánh giá gì trên máy này.")); return; }
+      any = true;
+      keys.sort(function (a, b) { return r[b] - r[a]; });
+      var top = keys.filter(function (x) { return r[x] === r[keys[0]]; }).slice(0, 3).map(itemName).join("; ");
+      var reasons = []; keys.forEach(function (x) { reasons = reasons.concat(((W[k.name] || {})[x]) || []); });
+      box.appendChild(el("p", "prefline", k.icon + " " + k.name + ": đã chấm " + keys.length + " mục. Thích nhất (" + r[keys[0]] + "★): " + top + ". Hay chọn: " + (reasons.length ? tally(reasons) : "chưa chọn lý do") + "."));
+    });
+    if (any) {
+      var rows = [];
+      STORIES.forEach(function (s, i) { var a = avgOf("s" + i); if (a) rows.push([a.avg, a.n, s.t]); });
+      GAMES.forEach(function (g, i) { var a = avgOf("g" + i); if (a) rows.push([a.avg, a.n, "🎮 " + g.t]); });
+      rows.sort(function (p, q) { return q[0] - p[0]; });
+      box.appendChild(el("b", "", "Xếp theo sao trung bình"));
+      rows.slice(0, 6).forEach(function (x) { box.appendChild(el("p", "prefline", x[0].toFixed(1) + "★ · " + x[2] + " (" + x[1] + " bé)")); });
+    } else box.appendChild(el("p", "legend", "Các bé đánh giá ở góc của mình, hoặc dán dữ liệu từ máy khác ở bên dưới."));
+    var det = el("details"); det.appendChild(el("summary", "", "↔ Chuyển dữ liệu giữa các máy"));
+    det.appendChild(el("p", "legend", "Máy của bé: bấm 'Sao chép', gửi chuỗi chữ cho ba mẹ. Máy ba mẹ: dán vào ô dưới rồi bấm 'Gộp'."));
+    var out = el("textarea", "fld"); out.readOnly = true; out.rows = 3; out.value = JSON.stringify({ v: 1, rate: R, why: W });
+    var cp = el("button", "send", "📤 Sao chép");
+    cp.onclick = function () {
+      out.select();
+      try { if (navigator.clipboard) navigator.clipboard.writeText(out.value); else document.execCommand("copy"); cp.textContent = "✓ Đã sao chép"; } catch (e) { cp.textContent = "Hãy chọn và sao chép thủ công"; }
+    };
+    var inp = el("textarea", "fld"); inp.rows = 3; inp.placeholder = "Dán dữ liệu từ máy khác vào đây";
+    var mg = el("button", "send good", "📥 Gộp vào máy này"), msg = el("p", "legend");
+    mg.onclick = function () {
+      try {
+        var d = JSON.parse(inp.value), r2 = loadR(), w2 = loadW(), n = 0;
+        Object.keys(d.rate || {}).forEach(function (w) { r2[w] = Object.assign(r2[w] || {}, d.rate[w]); n++; });
+        Object.keys(d.why || {}).forEach(function (w) { w2[w] = Object.assign(w2[w] || {}, d.why[w]); });
+        saveR(r2); saveW(w2); renderPref();
+      } catch (e) { msg.textContent = "Dữ liệu chưa đúng, thử sao chép lại nhé."; }
+    };
+    det.appendChild(out); det.appendChild(cp); det.appendChild(inp); det.appendChild(mg); det.appendChild(msg);
+    box.appendChild(det);
   }
 
   // ----- Nhà chung (trang đầu): bài đọc, câu đố, cây của cả nhà -----
@@ -726,22 +847,85 @@
   document.getElementById("tQuiz").onclick = homeQuiz;
   document.getElementById("tTree").onclick = homeTree;
 
-  function openStory(i) {
-    var s = STORIES[i], rd = document.getElementById("reader"), own = viewing === me;
-    rd.className = "panel open"; rd.innerHTML = "";
-    rd.appendChild(el("b", "", "📖 " + s.t));
-    s.p.forEach(function (x) { rd.appendChild(el("p", "", x)); });
-    var o = loadP(), d = pOf(o, viewing.name), got = !!d.done[ds(new Date()) + "|s" + i];
-    rd.appendChild(starRow("s" + i, own, function () { openStory(i); renderPlay(); }));
+  // ----- Sách trò chơi: mỗi trang một trò, lật qua lại; điểm ngay dưới trang -----
+  var GBOOK_I = 0;
+  function renderGameBook(dir) {
+    var box = document.getElementById("gbook"), N = GAMES.length, i;
+    var own = viewing === me, o = loadP(), d = pOf(o, viewing.name), day = ds(new Date()), g = GAMES[GBOOK_I];
+    box.innerHTML = "";
+    var wrap = el("div", "bookwrap");
+    wrap.appendChild(el("div", "booktop", "🎮 Trò chơi " + (GBOOK_I + 1) + " / " + N));
+    var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
+    page.appendChild(el("h3", "", "🎮 " + g.t));
+    page.appendChild(el("p", "", g.d));
+    var a = el("a", "send", "▶ Mở trò chơi"); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
+    a.style.cssText = "display:block;text-align:center;font-size:1.2rem;padding:16px;margin:16px 0 4px";
+    page.appendChild(a);
+    wrap.appendChild(page);
+    var got = !!d.done[day + "|g" + GBOOK_I], reward = el("div", "reward");
     if (own) {
-      var b = el("button", "send", got ? "Hôm nay đã nhận điểm" : "Con đã đọc xong (+" + READ_PTS + ")");
-      b.disabled = got;
-      b.onclick = function () { earn("s" + i, READ_PTS); openStory(i); };
-      rd.appendChild(b);
-    }
-    var x = el("button", "send alt", "Đóng"); x.onclick = function () { rd.className = "panel"; rd.innerHTML = ""; };
-    rd.appendChild(x);
-    rd.scrollIntoView({ behavior: "smooth", block: "start" });
+      var rb = el("button", "send" + (got ? " alt" : " good"), got ? "✓ Hôm nay đã nhận điểm trò này" : "Con đã chơi xong (+" + GAME_PTS + " điểm)");
+      rb.disabled = got;
+      rb.onclick = function () { earn("g" + GBOOK_I, GAME_PTS); };
+      reward.appendChild(rb);
+    } else reward.appendChild(el("small", "", "Bé tự bấm 'đã chơi xong' ở góc của mình để nhận điểm."));
+    reward.appendChild(starRow("g" + GBOOK_I, own, function () { renderGameBook(0); }));
+    reward.appendChild(whyRow("g" + GBOOK_I, own, function () { renderGameBook(0); }));
+    wrap.appendChild(reward);
+    var nav = el("div", "booknav");
+    var pv = el("button", "send alt", "◀ Trò trước"), nx = el("button", "send", "Trò tiếp ▶");
+    pv.onclick = function () { GBOOK_I = (GBOOK_I - 1 + N) % N; renderGameBook(-1); };
+    nx.onclick = function () { GBOOK_I = (GBOOK_I + 1) % N; renderGameBook(1); };
+    nav.appendChild(pv); nav.appendChild(nx);
+    wrap.appendChild(nav);
+    var dots = el("div", "bookdots");
+    for (i = 0; i < N; i++) (function (j) {
+      var dt = el("button", "bdot" + (j === GBOOK_I ? " on" : "") + (d.done[day + "|g" + j] ? " read" : ""), String(j + 1));
+      dt.setAttribute("aria-label", "Trò chơi " + (j + 1) + ": " + GAMES[j].t);
+      dt.onclick = function () { var dr = j > GBOOK_I ? 1 : -1; GBOOK_I = j; renderGameBook(dr); };
+      dots.appendChild(dt);
+    })(i);
+    wrap.appendChild(dots);
+    box.appendChild(wrap);
+  }
+
+  // ----- Sách truyện: mỗi trang một truyện, lật qua lại; điểm thưởng ngay dưới trang -----
+  var BOOK_I = 0;
+  function renderBook(dir) {
+    var box = document.getElementById("book"), N = STORIES.length, i;
+    var own = viewing === me, o = loadP(), d = pOf(o, viewing.name), day = ds(new Date()), s = STORIES[BOOK_I];
+    box.innerHTML = "";
+    var wrap = el("div", "bookwrap");
+    wrap.appendChild(el("div", "booktop", "📖 Truyện " + (BOOK_I + 1) + " / " + N));
+    var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
+    page.appendChild(el("h3", "", s.t));
+    s.p.forEach(function (x) { page.appendChild(el("p", "", x)); });
+    wrap.appendChild(page);
+    var got = !!d.done[day + "|s" + BOOK_I], reward = el("div", "reward");
+    if (own) {
+      var rb = el("button", "send" + (got ? " alt" : " good"), got ? "✓ Hôm nay đã nhận điểm truyện này" : "Con đã đọc xong (+" + READ_PTS + " điểm)");
+      rb.disabled = got;
+      rb.onclick = function () { earn("s" + BOOK_I, READ_PTS); };
+      reward.appendChild(rb);
+    } else reward.appendChild(el("small", "", "Bé tự bấm 'đã đọc xong' ở góc của mình để nhận điểm."));
+    reward.appendChild(starRow("s" + BOOK_I, own, function () { renderBook(0); }));
+    reward.appendChild(whyRow("s" + BOOK_I, own, function () { renderBook(0); }));
+    wrap.appendChild(reward);
+    var nav = el("div", "booknav");
+    var pv = el("button", "send alt", "◀ Truyện trước"), nx = el("button", "send", "Truyện tiếp ▶");
+    pv.onclick = function () { BOOK_I = (BOOK_I - 1 + N) % N; renderBook(-1); };
+    nx.onclick = function () { BOOK_I = (BOOK_I + 1) % N; renderBook(1); };
+    nav.appendChild(pv); nav.appendChild(nx);
+    wrap.appendChild(nav);
+    var dots = el("div", "bookdots");
+    for (i = 0; i < N; i++) (function (j) {
+      var dt = el("button", "bdot" + (j === BOOK_I ? " on" : "") + (d.done[day + "|s" + j] ? " read" : ""), String(j + 1));
+      dt.setAttribute("aria-label", "Truyện " + (j + 1) + ": " + STORIES[j].t);
+      dt.onclick = function () { var dr = j > BOOK_I ? 1 : -1; BOOK_I = j; renderBook(dr); };
+      dots.appendChild(dt);
+    })(i);
+    wrap.appendChild(dots);
+    box.appendChild(wrap);
   }
 
   // ----- Thu gọn khung giờ ngủ/đêm để bớt chiếm chỗ -----
@@ -786,6 +970,7 @@
     cal.innerHTML = ""; head.innerHTML = "";
     renderTodo();
     renderPlay();
+    renderPref();
     document.getElementById("addFixed").style.display = canEdit() ? "" : "none";
     buildLayout();
     cal.style.height = LAY.total + "px";
@@ -961,6 +1146,8 @@
     if (!k.parent) { var bd = el("i", "ncount"); bd.dataset.k = k.name; bd.title = "Việc còn phải làm hôm nay"; b.appendChild(bd); }
     b.onclick = function () {
       me = k;
+      document.getElementById("todo").open = false;
+      document.getElementById("schedWrap").open = false;
       document.getElementById("banner").style.background = k.color;
       document.getElementById("banner").textContent = k.icon + " Góc của " + k.name;
       nha.style.display = "none";
