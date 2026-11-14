@@ -282,7 +282,7 @@
     { name: "Nho", color: "#7048e8", icon: "🍇", lop: "6B2", start: "7:00", end: "11:15",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
       chores: [["17:30", "17:45", "Cho chó ăn"], ["19:30", "19:50", "Rửa chén"], ["19:50", "20:00", "Úp chén"], ["20:00", "20:20", "Dọn bếp"], ["20:30", "21:00", "Xếp quần áo"]] },
-    { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", start: "7:30", end: "11:00",
+    { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", start: "7:00", end: "9:50",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
       chores: [["17:30", "17:45", "Quét phòng khách"], ["17:45", "18:00", "Quét phòng ngủ"], ["18:00", "18:15", "Quét nhà giữa"], ["19:30", "19:45", "Dọn bàn ăn"], ["20:30", "21:00", "Xếp quần áo"]] },
     { name: "Ba", color: "#495057", icon: "🧔", parent: true, start: "7:30", back: "17:30" },
@@ -344,23 +344,43 @@
       ["Anh (Thuỷ)", "Toán (Vi)", "Văn (Hà)", "Tin (Anh)", "Sinh hoạt lớp"]
     ]
   };
+  // ----- Xoài, lớp 3B2, Trường Tiểu học Tân Phúc 1: TKB HKI 2026-2027 (áp dụng từ tuần 10). Sáng 4 tiết, chiều 3 tiết (T2–T5).
+  // Giờ từng tiết là GIẢ ĐỊNH (tiết 35 phút) — sửa MORN_BY / PM_BY khi biết giờ thật. Ký hiệu trong bảng: bs = bổ sung; (T), (N) chưa rõ nghĩa nên giữ nguyên.
+  var MORN_BY = { "3B2": [["7:00", "7:35"], ["7:40", "8:15"], ["8:35", "9:10"], ["9:15", "9:50"]] };
+  var PM_BY = { "3B2": { 1: ["13:30", "14:05"], 2: ["14:10", "14:45"], 3: ["14:50", "15:25"] } };
+  AM["3B2"] = [
+    ["HĐTN", "Tiếng Việt", "Tiếng Việt", "Tiếng Anh"],
+    ["Mĩ thuật", "Tiếng Việt", "Toán", "Tiếng Việt"],
+    ["Tiếng Việt", "Tiếng Việt", "Toán", "Toán (bổ sung)"],
+    ["TNXH (T)", "Toán", "Toán (bổ sung)", "Giáo dục thể chất"],
+    ["Toán", "Tiếng Anh", "Tiếng Việt (bổ sung · Đọc thư viện)", "HĐTN"]
+  ];
+  SCHOOL["3B2"] = [
+    [0, [1], "Giáo dục thể chất", null], [0, [2], "Âm nhạc", null], [0, [3], "TNXH (N)", null],
+    [1, [1], "Tiếng Anh (N)", null], [1, [2], "Công nghệ", null], [1, [3], "Toán", null],
+    [2, [1], "Tiếng Việt", null], [2, [2], "Tin học", null], [2, [3], "Đạo đức", null],
+    [3, [1], "Tiếng Anh", null], [3, [2], "Tiếng Việt (bổ sung)", null], [3, [3], "HĐTN", null]
+  ];
   // Tên các môn học trong ngày d (bỏ HĐTN, sinh hoạt), dùng cho việc "Học bài"
   function subjOf(k, d) {
     if (!k.lop || !AM[k.lop] || d > 4) return "";
     var seen = [];
-    AM[k.lop][d].forEach(function (n) {
+    function add(n) {
       var s = n.replace(/\s*\(.*\)/, "");
       if (/^HĐTN|^Sinh hoạt/.test(s) || seen.indexOf(s) >= 0) return;
       seen.push(s);
-    });
+    }
+    AM[k.lop][d].forEach(add);
+    if (PM_BY[k.lop]) SCHOOL[k.lop].forEach(function (it) { if (it[0] === d) add(it[2]); });
     return seen.length ? ": " + seen.join(", ") : "";
   }
   function schoolBlocks(k, d, date) {
     var b = [], wk = ((Math.floor(Math.round((date - ART_START) / 86400000) / 7) % 4) + 4) % 4;
-    AM[k.lop][d].forEach(function (name, i) { b.push([MORN_TIME[i][0], MORN_TIME[i][1], name]); });
+    var MT = MORN_BY[k.lop] || MORN_TIME, PT = PM_BY[k.lop] || PM_TIME;
+    AM[k.lop][d].forEach(function (name, i) { b.push([MT[i][0], MT[i][1], name]); });
     SCHOOL[k.lop].forEach(function (it) {
       if (it[0] !== d || (it[3] && it[3].indexOf(wk) < 0)) return;
-      b.push([PM_TIME[it[1][0]][0], PM_TIME[it[1][it[1].length - 1]][1], it[2]]);
+      b.push([PT[it[1][0]][0], PT[it[1][it[1].length - 1]][1], it[2]]);
     });
     return b;
   }
