@@ -124,6 +124,8 @@
   .whyrow .choices button { padding:6px 12px; font-size:.95rem; }
   .whyrow .choices button.on { background:#12b886; border-color:#12b886; color:#fff; }
   .prefline { margin:6px 0; line-height:1.5; }
+  .zsync { background:#edf2ff; border-color:#4c6ef5; }
+  .zsync .zonehead { background:#4c6ef5; }
   .card { position:relative; }
   .ncount { position:absolute; top:8px; right:10px; min-width:2.1rem; padding:1px 9px; border-radius:999px; background:#e03131; color:#fff; font-style:normal; font-weight:800; font-size:1.2rem; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .ncount.zero { background:#2f9e44; }
@@ -217,6 +219,8 @@
       </section>
     </div>
 
+    <section class="zone zsync" id="syncZone" style="display:none"><div class="zonehead">☁ ĐỒNG BỘ GIA ĐÌNH</div><div id="syncBody"></div></section>
+
     <section class="zone zpref" id="pref" style="display:none"><div class="zonehead">💡 SỞ THÍCH CÁC CON</div><div id="prefBody"></div></section>
 
     <h2 style="display:none">Con muốn làm gì?</h2>
@@ -235,7 +239,7 @@
     </div>
   </section>
 
-  <p class="note">Bản thử chạy trên máy này — các con xem thử và nói với ba điều con thích hoặc muốn đổi.</p>
+  <p class="note">Bản thử — các con xem thử và nói với ba điều con thích hoặc muốn đổi.<br><span id="syncLine"></span></p>
 </main>
 
 <script>
@@ -971,6 +975,7 @@
     renderTodo();
     renderPlay();
     renderPref();
+    renderSync();
     document.getElementById("addFixed").style.display = canEdit() ? "" : "none";
     buildLayout();
     cal.style.height = LAY.total + "px";
@@ -1168,6 +1173,100 @@
     };
     kidsEl.appendChild(b);
   });
+
+  // ===== Đồng bộ giữa các máy qua Google Sheet + Apps Script (xem apps-script/Code.gs) =====
+  // Mỗi mục dữ liệu = 1 bản ghi {k, u, v}; bản có u (mốc thời gian) mới hơn thắng. Chỉ gửi phần thay đổi.
+  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save };
+  var SYNC = { msg: "", timer: null, busy: false };
+  function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function syncReady() { return !!(sget("sc_url") && sget("sc_code")); }
+  function syncBuild() {
+    var rec = {}, R = loadR(), W = loadW(), T = loadTodo(), P = loadP(), C = load();
+    Object.keys(R).forEach(function (w) { Object.keys(R[w]).forEach(function (k) { rec["r|" + w + "|" + k] = String(R[w][k]); }); });
+    Object.keys(W).forEach(function (w) { Object.keys(W[w]).forEach(function (k) { rec["w|" + w + "|" + k] = JSON.stringify(W[w][k]); }); });
+    Object.keys(T).forEach(function (k) { rec["t|" + k] = String(T[k]); });
+    Object.keys(P).forEach(function (w) { rec["p|" + w] = JSON.stringify(P[w]); });
+    C.forEach(function (p) { rec["c|" + p.id] = JSON.stringify(p); });
+    return rec;
+  }
+  function syncApply(k, v) {
+    var ty = k.charAt(0), rest = k.slice(2), i;
+    if (ty === "r" || ty === "w") {
+      i = rest.indexOf("|");
+      var w = rest.slice(0, i), key = rest.slice(i + 1);
+      if (ty === "r") { var R = loadR(); (R[w] = R[w] || {})[key] = +v; RAW.R(R); }
+      else { var W = loadW(); (W[w] = W[w] || {})[key] = JSON.parse(v); RAW.W(W); }
+    } else if (ty === "t") { var T = loadTodo(); T[rest] = v; RAW.T(T); }
+    else if (ty === "p") { var P = loadP(); P[rest] = JSON.parse(v); RAW.P(P); }
+    else if (ty === "c") {
+      var obj = JSON.parse(v), a = load(), hit = false;
+      a.forEach(function (x, j) { if (x.id === obj.id) { a[j] = obj; hit = true; } });
+      if (!hit) a.push(obj);
+      RAW.C(a);
+    }
+  }
+  function syncRefresh() {
+    updateBadges(); renderHomeVine();
+    if (me && viewing) render();
+  }
+  function syncLine() {
+    var el1 = document.getElementById("syncLine");
+    if (el1) el1.textContent = syncReady() ? ("☁ " + (SYNC.msg || "Đang kết nối…")) : "☁ Chưa kết nối gia đình (ba mẹ cài ở góc Ba/Mẹ)";
+  }
+  function syncNow() {
+    if (!syncReady() || SYNC.busy) { syncLine(); return Promise.resolve(); }
+    SYNC.busy = true;
+    var url = sget("sc_url"), code = sget("sc_code"), meta, local = syncBuild(), out = [], now = Date.now(), k;
+    try { meta = JSON.parse(sget("sc_meta") || "{}"); } catch (e) { meta = {}; }
+    for (k in local) if (!meta[k] || meta[k].j !== local[k]) out.push({ k: k, u: now, v: local[k] });
+    var push = out.length ? fetch(url, { method: "POST", body: JSON.stringify({ code: code, records: out }) }).catch(function () {}) : Promise.resolve();
+    return push.then(function () { return fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "code=" + encodeURIComponent(code) + "&t=" + Date.now()); })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.status === "denied") { SYNC.msg = "Mã gia đình chưa đúng"; return; }
+        if (d.status !== "ok") { SYNC.msg = "Máy chủ báo lỗi"; return; }
+        var changed = 0, remote = {}, mine = {};
+        d.records.forEach(function (r) { remote[r.k] = r; });
+        out.forEach(function (o) { mine[o.k] = 1; if (remote[o.k] && remote[o.k].v === o.v) meta[o.k] = { u: remote[o.k].u, j: o.v }; });
+        d.records.forEach(function (r) {
+          if (mine[r.k]) return;
+          var m = meta[r.k];
+          if ((!m || r.u > m.u) && (!m || r.v !== m.j)) {
+            try { syncApply(r.k, r.v); meta[r.k] = { u: r.u, j: r.v }; changed++; } catch (e) {}
+          }
+        });
+        sset("sc_meta", JSON.stringify(meta));
+        var n = new Date();
+        SYNC.msg = "Đã đồng bộ lúc " + pad(n.getHours()) + ":" + pad(n.getMinutes()) + (changed ? " · nhận " + changed + " cập nhật" : "");
+        if (changed) syncRefresh();
+      })
+      .catch(function () { SYNC.msg = "Chưa kết nối được mạng/máy chủ"; })
+      .then(function () { SYNC.busy = false; syncLine(); renderSync(); });
+  }
+  function scheduleSync() { if (!syncReady()) return; clearTimeout(SYNC.timer); SYNC.timer = setTimeout(syncNow, 2500); }
+  saveR = function (o) { RAW.R(o); scheduleSync(); };
+  saveW = function (o) { RAW.W(o); scheduleSync(); };
+  saveTodo = function (o) { RAW.T(o); scheduleSync(); };
+  saveP = function (o) { RAW.P(o); scheduleSync(); };
+  save = function (a) { RAW.C(a); scheduleSync(); };
+  function renderSync() {
+    var wrap = document.getElementById("syncZone"), box = document.getElementById("syncBody");
+    if (!viewing || !viewing.parent) { if (wrap) wrap.style.display = "none"; return; }
+    wrap.style.display = "block"; box.innerHTML = "";
+    box.appendChild(el("p", "prefline", syncReady() ? "☁ " + (SYNC.msg || "Đang kết nối…") : "Chưa kết nối. Dán địa chỉ Apps Script và mã gia đình (làm một lần trên mỗi máy)."));
+    var u = el("input", "fld"); u.placeholder = "Địa chỉ Apps Script (https://script.google.com/macros/s/…/exec)"; u.value = sget("sc_url");
+    var c = el("input", "fld"); c.type = "password"; c.placeholder = "Mã gia đình"; c.value = sget("sc_code");
+    var ok = el("button", "send good", "Kết nối và đồng bộ"), off = el("button", "send alt", "Ngắt kết nối máy này"), now = el("button", "send", "↻ Đồng bộ ngay");
+    ok.onclick = function () { sset("sc_url", u.value.replace(/^\s+|\s+$/g, "")); sset("sc_code", c.value.replace(/^\s+|\s+$/g, "")); SYNC.msg = "Đang kết nối…"; renderSync(); syncNow(); };
+    off.onclick = function () { sset("sc_url", ""); sset("sc_code", ""); sset("sc_meta", ""); SYNC.msg = ""; syncLine(); renderSync(); };
+    now.onclick = function () { syncNow(); };
+    box.appendChild(u); box.appendChild(c); box.appendChild(ok);
+    if (syncReady()) { box.appendChild(now); box.appendChild(off); }
+  }
+  syncLine();
+  setTimeout(syncNow, 800);
+  setInterval(function () { if (!document.hidden) syncNow(); }, 45000);
 
   // ----- Đồng hồ điện tử + ngày tháng lớn -----
   var DOW = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
