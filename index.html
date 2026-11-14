@@ -1286,7 +1286,7 @@
 
   // ===== Câu gốc tuần này (mỗi bé một thẻ, sửa được) =====
   var VKEY = "sc_verse";
-  var VERSE_DEFAULT = { "Xoài": { ref: "Lu-ca 6:27", text: "Nhưng ta bảo các ngươi là người đang nghe, hãy yêu kẻ thù mình. Hãy đối tốt với kẻ ghét mình,", note: "Chữ theo Bản Phổ Thông (BPT). Nếu lớp dùng bản khác, bấm ✎ Sửa để đổi cho đúng bản lớp." } };
+  var VERSE_DEFAULT = { "Xoài": { ref: "Lu-ca 6:27", text: "Nhưng ta phán cùng các ngươi, là người nghe ta: Hãy yêu kẻ thù mình, làm ơn cho kẻ ghét mình,", note: "Bản Truyền Thống 1925. Nếu lớp dùng bản hiệu đính, bấm ✎ Sửa để đổi cho khớp." } };
   function loadV() { try { return JSON.parse(localStorage.getItem(VKEY)) || {}; } catch (e) { return {}; } }
   function saveV(o) { try { localStorage.setItem(VKEY, JSON.stringify(o)); } catch (e) {} }
   function renderVerse() {
