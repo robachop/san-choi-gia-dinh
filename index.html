@@ -126,6 +126,10 @@
   .prefline { margin:6px 0; line-height:1.5; }
   .zsync { background:#edf2ff; border-color:#4c6ef5; }
   .zsync .zonehead { background:#4c6ef5; }
+  .addform { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:4px 0 6px; }
+  .addform .fld { flex:1 1 60%; margin-top:0; min-width:160px; }
+  .todoitem b small { display:block; font-weight:400; opacity:.7; font-size:.8rem; }
+  .xdel { border:0; background:#ffe3e3; color:#c92a2a; border-radius:50%; width:2rem; height:2rem; font-size:1rem; cursor:pointer; flex:0 0 auto; }
   .card { position:relative; }
   .ncount { position:absolute; top:8px; right:10px; min-width:2.1rem; padding:1px 9px; border-radius:999px; background:#e03131; color:#fff; font-style:normal; font-weight:800; font-size:1.2rem; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .ncount.zero { background:#2f9e44; }
@@ -419,6 +423,11 @@
   var TKEY = "sc_todo";
   var TSTAT = ["Chưa làm", "Đang làm", "Xong", "Cần giúp"];
   var STUDY = ["Học bài các môn hôm nay", "Học bài các môn ngày mai", "Chuẩn bị sách vở"];
+  // Việc tự thêm (con tự thêm hoặc ba mẹ giao): {id, who, text, scope: "date"|"daily", date, by: "kid"|"parent", del}
+  var MKEY = "sc_mytodo";
+  function loadM() { try { return JSON.parse(localStorage.getItem(MKEY)) || []; } catch (e) { return []; } }
+  function saveM(a) { try { localStorage.setItem(MKEY, JSON.stringify(a)); } catch (e) {} }
+  function customOf(k, dateS) { return loadM().filter(function (x) { return x.who === k.name && !x.del && (x.scope === "daily" || x.date === dateS); }); }
   function loadTodo() { try { return JSON.parse(localStorage.getItem(TKEY)) || {}; } catch (e) { return {}; } }
   function saveTodo(o) { try { localStorage.setItem(TKEY, JSON.stringify(o)); } catch (e) {} }
   function todoItems(k, d) {
@@ -431,7 +440,7 @@
     var st = loadTodo(), now = new Date(), day = ds(now);
     Array.prototype.forEach.call(document.querySelectorAll(".ncount"), function (bd) {
       var k = person(bd.dataset.k), left = 0;
-      todoItems(k, wd(now)).forEach(function (label) { if ((st[k.name + "|" + day + "|" + label] || TSTAT[0]) !== "Xong") left++; });
+      todoItems(k, wd(now)).concat(customOf(k, day).map(function (x) { return x.text; })).forEach(function (label) { if ((st[k.name + "|" + day + "|" + label] || TSTAT[0]) !== "Xong") left++; });
       bd.textContent = left ? left : "✓";
       bd.className = "ncount" + (left ? "" : " zero");
     });
@@ -439,16 +448,35 @@
   function renderTodo() {
     updateBadges();
     var wrap = document.getElementById("todo"), box = document.getElementById("todoList");
-    if (viewing.parent) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
     box.innerHTML = "";
-    var st = loadTodo(), day = ds(startDate), left = 0;
-    todoItems(viewing, wd(startDate)).forEach(function (label) { if ((st[viewing.name + "|" + day + "|" + label] || TSTAT[0]) !== "Xong") left++; });
-    document.getElementById("todoTitle").textContent = "Việc cần làm — " + dlabel(startDate) + (left ? " · còn " + left : " · xong hết ✓");
-    todoItems(viewing, wd(startDate)).forEach(function (label) {
+    var st = loadTodo(), day = ds(startDate), d = wd(startDate), left = 0;
+    var base = viewing.parent ? [] : todoItems(viewing, d), custom = customOf(viewing, day);
+    function status(label) { return st[viewing.name + "|" + day + "|" + label] || TSTAT[0]; }
+    base.forEach(function (l) { if (status(l) !== "Xong") left++; });
+    custom.forEach(function (c) { if (status(c.text) !== "Xong") left++; });
+    document.getElementById("todoTitle").textContent = (viewing.parent ? "Việc của " + viewing.name : "Việc cần làm") + " — " + dlabel(startDate) + (left ? " · còn " + left : (base.length + custom.length ? " · xong hết ✓" : ""));
+    if (canEdit()) {
+      var form = el("div", "addform");
+      var inp = el("input", "fld"); inp.maxLength = 80; inp.placeholder = viewing === me ? "＋ Thêm việc của mình (ví dụ: Tưới cây)" : "＋ Giao việc cho " + viewing.name;
+      var sc = el("select", "tsel"); [["date", "Chỉ " + dlabel(startDate)], ["daily", "Mỗi ngày"]].forEach(function (o) { var op = el("option", "", o[1]); op.value = o[0]; sc.appendChild(op); });
+      var add = el("button", "send good", "Thêm");
+      add.onclick = function () {
+        var txt = inp.value.replace(/^\s+|\s+$/g, "");
+        if (!txt) { inp.focus(); return; }
+        var a = loadM();
+        a.push({ id: "m" + Date.now() + Math.floor(Math.random() * 1000), who: viewing.name, text: txt, scope: sc.value, date: day, by: me.parent ? "parent" : "kid", del: false });
+        saveM(a); renderTodo();
+      };
+      form.appendChild(inp); form.appendChild(sc); form.appendChild(add);
+      box.appendChild(form);
+    }
+    function row(label, tag, c) {
       var key = viewing.name + "|" + day + "|" + label, cur = st[key] || TSTAT[0];
       var it = el("div", "item todoitem" + (cur === "Xong" ? " fin" : "") + (cur === "Cần giúp" ? " help" : ""));
-      it.appendChild(el("b", "", label));
+      var b = el("b", "", label);
+      if (tag) b.appendChild(el("small", "", tag));
+      it.appendChild(b);
       var sel = el("select", "tsel s" + TSTAT.indexOf(cur));
       sel.setAttribute("aria-label", "Trạng thái: " + label);
       TSTAT.forEach(function (s) {
@@ -456,8 +484,16 @@
       });
       sel.onchange = function () { var o = loadTodo(); o[key] = sel.value; saveTodo(o); renderTodo(); };
       it.appendChild(sel);
+      if (c && canEdit()) {
+        var x = el("button", "xdel", "✕"); x.title = "Xóa việc này"; x.setAttribute("aria-label", "Xóa việc " + label);
+        x.onclick = function () { var a = loadM(); a.forEach(function (m) { if (m.id === c.id) m.del = true; }); saveM(a); renderTodo(); };
+        it.appendChild(x);
+      }
       box.appendChild(it);
-    });
+    }
+    base.forEach(function (l) { row(l, "", null); });
+    custom.forEach(function (c) { row(c.text, (c.by === "parent" ? "ba mẹ giao" : (viewing.parent ? "" : "con tự thêm")) + (c.scope === "daily" ? (c.by === "parent" || !viewing.parent ? " · mỗi ngày" : "mỗi ngày") : ""), c); });
+    if (!base.length && !custom.length) box.appendChild(el("p", "legend", "Chưa có việc nào. Bấm ô trên để thêm."));
   }
 
   // ===== Bài đọc, trò chơi, điểm thưởng và cây nhỏ =====
@@ -1176,11 +1212,15 @@
 
   // ===== Đồng bộ giữa các máy qua Google Sheet + Apps Script (xem apps-script/Code.gs) =====
   // Mỗi mục dữ liệu = 1 bản ghi {k, u, v}; bản có u (mốc thời gian) mới hơn thắng. Chỉ gửi phần thay đổi.
-  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save };
+  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM };
   var SYNC = { msg: "", timer: null, busy: false };
   function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  function syncReady() { return !!(sget("sc_url") && sget("sc_code")); }
+  // Địa chỉ Apps Script dựng sẵn → các máy tự kết nối, không phải nhập gì. (Có thể ghi đè bằng localStorage sc_url.)
+  var DEFAULT_URL = "https://script.google.com/macros/s/AKfycbz3WFJx-426LC7wvtSugYw3XikqHOtdzCMuWQWU_q-NF9BTTH_r7JK8vH3vq595n7dkJg/exec";
+  function syncUrl() { return sget("sc_url") || DEFAULT_URL; }
+  function syncCode() { return sget("sc_code") || ""; }
+  function syncReady() { return !!syncUrl(); }
   function syncBuild() {
     var rec = {}, R = loadR(), W = loadW(), T = loadTodo(), P = loadP(), C = load();
     Object.keys(R).forEach(function (w) { Object.keys(R[w]).forEach(function (k) { rec["r|" + w + "|" + k] = String(R[w][k]); }); });
@@ -1188,6 +1228,7 @@
     Object.keys(T).forEach(function (k) { rec["t|" + k] = String(T[k]); });
     Object.keys(P).forEach(function (w) { rec["p|" + w] = JSON.stringify(P[w]); });
     C.forEach(function (p) { rec["c|" + p.id] = JSON.stringify(p); });
+    loadM().forEach(function (m) { rec["m|" + m.id] = JSON.stringify(m); });
     return rec;
   }
   function syncApply(k, v) {
@@ -1199,6 +1240,12 @@
       else { var W = loadW(); (W[w] = W[w] || {})[key] = JSON.parse(v); RAW.W(W); }
     } else if (ty === "t") { var T = loadTodo(); T[rest] = v; RAW.T(T); }
     else if (ty === "p") { var P = loadP(); P[rest] = JSON.parse(v); RAW.P(P); }
+    else if (ty === "m") {
+      var mo = JSON.parse(v), ma = loadM(), mh = false;
+      ma.forEach(function (x, j) { if (x.id === mo.id) { ma[j] = mo; mh = true; } });
+      if (!mh) ma.push(mo);
+      RAW.M(ma);
+    }
     else if (ty === "c") {
       var obj = JSON.parse(v), a = load(), hit = false;
       a.forEach(function (x, j) { if (x.id === obj.id) { a[j] = obj; hit = true; } });
@@ -1212,19 +1259,19 @@
   }
   function syncLine() {
     var el1 = document.getElementById("syncLine");
-    if (el1) el1.textContent = syncReady() ? ("☁ " + (SYNC.msg || "Đang kết nối…")) : "☁ Chưa kết nối gia đình (ba mẹ cài ở góc Ba/Mẹ)";
+    if (el1) el1.textContent = "☁ " + (SYNC.msg || "Đang kết nối…");
   }
   function syncNow() {
     if (!syncReady() || SYNC.busy) { syncLine(); return Promise.resolve(); }
     SYNC.busy = true;
-    var url = sget("sc_url"), code = sget("sc_code"), meta, local = syncBuild(), out = [], now = Date.now(), k;
+    var url = syncUrl(), code = syncCode(), meta, local = syncBuild(), out = [], now = Date.now(), k;
     try { meta = JSON.parse(sget("sc_meta") || "{}"); } catch (e) { meta = {}; }
     for (k in local) if (!meta[k] || meta[k].j !== local[k]) out.push({ k: k, u: now, v: local[k] });
     var push = out.length ? fetch(url, { method: "POST", body: JSON.stringify({ code: code, records: out }) }).catch(function () {}) : Promise.resolve();
     return push.then(function () { return fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "code=" + encodeURIComponent(code) + "&t=" + Date.now()); })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (d.status === "denied") { SYNC.msg = "Mã gia đình chưa đúng"; return; }
+        if (d.status === "denied") { SYNC.msg = "Máy chủ từ chối (Apps Script còn bắt mã gia đình)"; return; }
         if (d.status !== "ok") { SYNC.msg = "Máy chủ báo lỗi"; return; }
         var changed = 0, remote = {}, mine = {};
         d.records.forEach(function (r) { remote[r.k] = r; });
@@ -1250,19 +1297,16 @@
   saveTodo = function (o) { RAW.T(o); scheduleSync(); };
   saveP = function (o) { RAW.P(o); scheduleSync(); };
   save = function (a) { RAW.C(a); scheduleSync(); };
+  saveM = function (a) { RAW.M(a); scheduleSync(); };
   function renderSync() {
     var wrap = document.getElementById("syncZone"), box = document.getElementById("syncBody");
     if (!viewing || !viewing.parent) { if (wrap) wrap.style.display = "none"; return; }
     wrap.style.display = "block"; box.innerHTML = "";
-    box.appendChild(el("p", "prefline", syncReady() ? "☁ " + (SYNC.msg || "Đang kết nối…") : "Chưa kết nối. Dán địa chỉ Apps Script và mã gia đình (làm một lần trên mỗi máy)."));
-    var u = el("input", "fld"); u.placeholder = "Địa chỉ Apps Script (https://script.google.com/macros/s/…/exec)"; u.value = sget("sc_url");
-    var c = el("input", "fld"); c.type = "password"; c.placeholder = "Mã gia đình"; c.value = sget("sc_code");
-    var ok = el("button", "send good", "Kết nối và đồng bộ"), off = el("button", "send alt", "Ngắt kết nối máy này"), now = el("button", "send", "↻ Đồng bộ ngay");
-    ok.onclick = function () { sset("sc_url", u.value.replace(/^\s+|\s+$/g, "")); sset("sc_code", c.value.replace(/^\s+|\s+$/g, "")); SYNC.msg = "Đang kết nối…"; renderSync(); syncNow(); };
-    off.onclick = function () { sset("sc_url", ""); sset("sc_code", ""); sset("sc_meta", ""); SYNC.msg = ""; syncLine(); renderSync(); };
-    now.onclick = function () { syncNow(); };
-    box.appendChild(u); box.appendChild(c); box.appendChild(ok);
-    if (syncReady()) { box.appendChild(now); box.appendChild(off); }
+    box.appendChild(el("p", "prefline", "☁ " + (SYNC.msg || "Đang kết nối…")));
+    box.appendChild(el("p", "legend", "Trang tự đồng bộ với Google Sheet 'Sân chơi gia đình' (khi mở, mỗi 45 giây và sau mỗi thay đổi). Không cần nhập gì."));
+    var now = el("button", "send", "↻ Đồng bộ ngay");
+    now.onclick = function () { SYNC.msg = "Đang đồng bộ…"; renderSync(); syncNow(); };
+    box.appendChild(now);
   }
   syncLine();
   setTimeout(syncNow, 800);
