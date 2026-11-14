@@ -57,6 +57,12 @@
   .item { background:#fff; border-radius:12px; padding:10px 12px; margin-top:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .item b { display:block; }
   .treebig { font-size:3.2rem; line-height:1.1; }
+  .nightbar { position:absolute; left:52px; right:0; z-index:3; background:#e7e9f5; border-radius:6px; text-align:center; font-size:.85rem; line-height:32px; cursor:pointer; color:#4b4f7a; }
+  .stars { display:flex; flex-wrap:wrap; align-items:center; gap:2px; margin-top:6px; }
+  .stars button { border:0; background:none; font-size:1.7rem; cursor:pointer; color:#f08c00; padding:0 2px; }
+  .stars button:disabled { cursor:default; }
+  .stars small { margin-left:8px; opacity:.75; }
+  .fld { width:100%; padding:10px; margin-top:6px; border:2px solid #d9d2c3; border-radius:10px; font:inherit; background:#fff; }
   #reader p { line-height:1.5; }
   a.send { display:inline-block; text-decoration:none; }
   button.send:disabled { opacity:.5; cursor:default; }
@@ -85,7 +91,7 @@
     <div class="grid">
       <div class="tile" id="tRead" style="cursor:pointer"><span>📖</span>Bài đọc<small>3 truyện ngắn</small></div>
       <div class="tile" id="tQuiz" style="cursor:pointer"><span>❓</span>Câu đố<small>Câu đố · ô chữ · tôi là ai</small></div>
-      <div class="tile" id="tTree" style="cursor:pointer"><span>🌳</span>Cây nhỏ<small>Cây của cả nhà</small></div>
+      <div class="tile" id="tTree" style="cursor:pointer"><span>🍇</span>Cây nho<small>3 nhánh, 1 gốc</small></div>
     </div>
     <div class="panel" id="homePanel"></div>
   </section>
@@ -114,6 +120,7 @@
       <input type="date" id="jump" title="Chọn ngày bất kỳ">
     </div>
     <div class="choices" id="spanBtns"><button data-n="3">3 ngày</button><button data-n="5">5 ngày</button><button data-n="7">7 ngày</button></div>
+    <div class="choices"><button id="addFixed">＋ Thêm giờ cố định</button><button id="toggleNight">🕐 Hiện cả 24 giờ</button></div>
     <div id="monthLbl"></div>
     <div class="calwrap" id="calwrap">
       <div class="dhead" id="dhead"></div>
@@ -267,7 +274,20 @@
       b.push(["18:30", "19:30", "Cơm tối cả nhà"]);
     }
     if (!k.parent) { b.push(["21:00", "24:00", "Đi ngủ"]); b.push(["0:00", "6:30", "Ngủ"]); }
-    return b.map(function (r) { return { s: m(r[0]), e: m(r[1]), label: r[2] }; });
+    var out = b.map(function (r) { return { s: m(r[0]), e: m(r[1]), label: r[2] }; });
+    return applyEdits(k, d, date, out);
+  }
+
+  // Chỉnh sửa giờ cố định do người dùng làm (lưu trên máy): bản ghi hide/add theo ngày hoặc theo thứ
+  var EKEY = "sc_edit";
+  function loadEdit() { try { return JSON.parse(localStorage.getItem(EKEY)) || []; } catch (e) { return []; } }
+  function saveEdit(a) { try { localStorage.setItem(EKEY, JSON.stringify(a)); } catch (e) {} }
+  function applyEdits(k, d, date, out) {
+    var dstr = date ? ds(date) : null;
+    var ed = loadEdit().filter(function (r) { return r.who === k.name && ((r.scope === "date" && r.key === dstr) || (r.scope === "wd" && r.key === d)); });
+    ed.forEach(function (r) { if (r.type === "hide") out = out.filter(function (x) { return !(x.label === r.label && x.s === r.s); }); });
+    ed.forEach(function (r) { if (r.type === "add") out.push({ s: r.s, e: r.e, label: r.label, id: r.id }); });
+    return out;
   }
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
@@ -368,7 +388,7 @@
     { t: "Trò chơi ô chữ" },
     { t: "Trò chơi Tôi là ai?" }
   ];
-  var STAGES = [[0, "🌱", "Hạt vừa nảy mầm"], [1, "🌿", "Cây con"], [3, "🪴", "Cây lớn dần"], [6, "🌳", "Cây xanh tốt"], [10, "🍎", "Cây có quả!"]];
+  var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
   function loadP() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
   function saveP(o) { try { localStorage.setItem(PKEY, JSON.stringify(o)); } catch (e) {} }
   function pOf(o, name) { if (!o[name]) o[name] = { pts: 0, fed: 0, done: {} }; return o[name]; }
@@ -391,7 +411,7 @@
       it.appendChild(el("b", "", "📖 " + s.t + (d.done[day + "|s" + i] ? "  ✓" : "")));
       var c = el("div", "choices"), b = el("button", "", "Đọc truyện");
       b.onclick = function () { openStory(i); };
-      c.appendChild(b); it.appendChild(c); list.appendChild(it);
+      c.appendChild(b); it.appendChild(c); it.appendChild(starRow("s" + i, own, renderPlay)); list.appendChild(it);
     });
     GAMES.forEach(function (g, i) {
       var it = el("div", "item");
@@ -405,15 +425,16 @@
         done.onclick = function () { earn("g" + i, GAME_PTS); };
         it.appendChild(done);
       }
+      it.appendChild(starRow("g" + i, own, renderPlay));
       list.appendChild(it);
     });
     var st = STAGES[0];
     STAGES.forEach(function (x) { if (d.fed >= x[0]) st = x; });
     var tr = document.getElementById("tree");
     tr.innerHTML = "";
-    document.getElementById("treeTitle").textContent = "Cây của " + viewing.name;
-    tr.appendChild(el("div", "treebig", st[1]));
-    tr.appendChild(el("b", "", st[2] + " · đã bón " + d.fed + " lần"));
+    document.getElementById("treeTitle").textContent = "Cây nho nhà mình — nhánh của " + viewing.name;
+    var vine = el("div"); vine.innerHTML = vineHTML(viewing.name); tr.appendChild(vine);
+    tr.appendChild(el("b", "", st[1] + " " + st[2] + " · đã bón " + d.fed + " lần"));
     if (own) {
       var f = el("button", "send good", "Bón cây (−" + FEED_COST + " điểm)");
       f.disabled = d.pts < FEED_COST;
@@ -426,6 +447,103 @@
       if (d.pts < FEED_COST) tr.appendChild(el("p", "legend", "Đọc truyện hoặc chơi để có thêm điểm nhé."));
     }
   }
+  // ----- Sửa giờ cố định / thời khóa biểu -----
+  function canEdit() { return !!me && (me === viewing || me.parent); }
+  function hh(n) { if (n >= 1440) n = 1439; return pad(Math.floor(n / 60)) + ":" + pad(n % 60); }
+  function openFixed(b, dateS, wdi) {
+    if (!canEdit()) return;
+    var pn = openPanel(), isNew = !b, custom = !!(b && b.id);
+    pn.appendChild(el("b", "", isNew ? "Thêm giờ cố định" : custom ? "Sửa giờ cố định" : "Sửa giờ cố định (có sẵn)"));
+    var name = el("input", "fld"); name.maxLength = 50; name.placeholder = "Tên (ví dụ: Học thêm Toán)"; name.value = b ? b.label : "";
+    var s = el("input", "fld"); s.type = "time"; s.value = b ? hh(b.s) : "07:00";
+    var e = el("input", "fld"); e.type = "time"; e.value = b ? hh(b.e) : "08:00";
+    pn.appendChild(el("p", "", "Tên")); pn.appendChild(name);
+    pn.appendChild(el("p", "", "Từ giờ")); pn.appendChild(s);
+    pn.appendChild(el("p", "", "Đến giờ")); pn.appendChild(e);
+    var scope = "date";
+    if (!custom) {
+      pn.appendChild(el("p", "", "Áp dụng"));
+      var sc = choices([{ label: "Chỉ ngày " + dlabel(parse(dateS)), v: "date" }, { label: "Mọi " + DAYS[wdi], v: "wd" }], function (it) { scope = it.v; });
+      sc.children[0].className = "on";
+      pn.appendChild(sc);
+    }
+    var msg = el("p", "legend");
+    var save = el("button", "send good", "Lưu");
+    save.onclick = function () {
+      var lab = name.value.replace(/^\s+|\s+$/g, ""), st = m(s.value || "0:00"), en = m(e.value || "0:00");
+      if (!lab) { msg.textContent = "Nhớ ghi tên nhé."; return; }
+      if (en <= st) { msg.textContent = "Giờ kết thúc phải sau giờ bắt đầu."; return; }
+      var a = loadEdit(), key = scope === "date" ? dateS : wdi;
+      if (custom) {
+        a.forEach(function (r) { if (r.id === b.id) { r.label = lab; r.s = st; r.e = en; } });
+      } else {
+        if (!isNew) a.push({ id: "h" + Date.now(), who: viewing.name, type: "hide", label: b.label, s: b.s, e: b.e, scope: scope, key: key });
+        a.push({ id: "a" + Date.now() + Math.floor(Math.random() * 1000), who: viewing.name, type: "add", label: lab, s: st, e: en, scope: scope, key: key });
+      }
+      saveEdit(a); closePanel(); render();
+    };
+    pn.appendChild(save);
+    if (!isNew) {
+      var del = el("button", "send bad", "Bỏ khối này");
+      del.onclick = function () {
+        var a = loadEdit();
+        if (custom) a = a.filter(function (r) { return r.id !== b.id; });
+        else a.push({ id: "h" + Date.now(), who: viewing.name, type: "hide", label: b.label, s: b.s, e: b.e, scope: scope, key: scope === "date" ? dateS : wdi });
+        saveEdit(a); closePanel(); render();
+      };
+      pn.appendChild(del);
+    }
+    var x = el("button", "send alt", "Đóng"); x.onclick = closePanel; pn.appendChild(x); pn.appendChild(msg);
+  }
+  document.getElementById("toggleNight").onclick = function () { SHOW_ALL = !SHOW_ALL; render(); };
+  document.getElementById("addFixed").onclick = function () { openFixed(null, ds(startDate), wd(startDate)); };
+
+  // ----- Đánh giá sao cho truyện và trò chơi -----
+  var RKEY = "sc_rate";
+  function loadR() { try { return JSON.parse(localStorage.getItem(RKEY)) || {}; } catch (e) { return {}; } }
+  function saveR(o) { try { localStorage.setItem(RKEY, JSON.stringify(o)); } catch (e) {} }
+  function avgOf(key) {
+    var o = loadR(), sum = 0, n = 0;
+    Object.keys(o).forEach(function (w) { if (o[w][key]) { sum += o[w][key]; n++; } });
+    return n ? { avg: sum / n, n: n } : null;
+  }
+  function starRow(key, own, after) {
+    var row = el("div", "stars"), cur = (loadR()[viewing.name] || {})[key] || 0, i;
+    for (i = 1; i <= 5; i++) (function (v) {
+      var b = el("button", "", v <= cur ? "★" : "☆");
+      b.disabled = !own;
+      b.onclick = function () { var o = loadR(); (o[viewing.name] = o[viewing.name] || {})[key] = v; saveR(o); after(); };
+      row.appendChild(b);
+    })(i);
+    var a = avgOf(key);
+    row.appendChild(el("small", "", a ? "Cả nhà: " + a.avg.toFixed(1) + "★ (" + a.n + " bé)" : (own ? "Con tặng sao nhé" : "Chưa có sao")));
+    return row;
+  }
+
+  // ----- Cây nho: 1 gốc chung, 3 nhánh (mỗi bé một nhánh), lớn lên theo số lần bón -----
+  function vineHTML(hi) {
+    var o = loadP(), kids = KIDS.filter(function (k) { return !k.parent; });
+    var tg = [[55, 60], [150, 38], [245, 60]], total = 0, s = "";
+    kids.forEach(function (k) { total += (o[k.name] || {}).fed || 0; });
+    s += '<ellipse cx="150" cy="258" rx="90" ry="9" fill="#d9c9a8"/>';
+    s += '<line x1="150" y1="256" x2="150" y2="150" stroke="#7a4b22" stroke-width="' + (10 + Math.min(total, 30) * 0.4) + '" stroke-linecap="round"/>';
+    kids.forEach(function (k, i) {
+      var f = (o[k.name] || {}).fed || 0, p = Math.min(f / 10, 1), t = 0.3 + 0.7 * p;
+      var ex = 150 + (tg[i][0] - 150) * t, ey = 150 + (tg[i][1] - 150) * t;
+      s += '<line x1="150" y1="150" x2="' + ex + '" y2="' + ey + '" stroke="#8b5a2b" stroke-width="' + (k.name === hi ? 8 : 5) + '" stroke-linecap="round"/>';
+      var leaves = Math.min(f, 8), j;
+      for (j = 1; j <= leaves; j++) {
+        var fr = j / (leaves + 1), lx = 150 + (ex - 150) * fr + (j % 2 ? -9 : 9), ly = 150 + (ey - 150) * fr;
+        s += '<ellipse cx="' + lx + '" cy="' + ly + '" rx="8" ry="5" fill="#51cf66"/>';
+      }
+      var g = f >= 10 ? 9 : f >= 6 ? 6 : f >= 3 ? 3 : 0, q;
+      for (q = 0; q < g; q++) s += '<circle cx="' + (ex + ((q % 3) - 1) * 10) + '" cy="' + (ey + 12 + Math.floor(q / 3) * 10) + '" r="5.5" fill="' + k.color + '" stroke="#fff" stroke-width="1"/>';
+      if (f === 0) s += '<circle cx="' + ex + '" cy="' + ey + '" r="4" fill="#94d82d"/>';
+      s += '<text x="' + ex + '" y="' + (ey - 12) + '" text-anchor="middle" font-size="15" font-weight="' + (k.name === hi ? 800 : 500) + '" fill="#2b2b3a">' + k.icon + " " + k.name + "</text>";
+    });
+    return '<svg viewBox="0 0 300 270" style="width:100%;max-width:420px;display:block;margin:0 auto">' + s + "</svg>";
+  }
+
   // ----- Nhà chung (trang đầu): bài đọc, câu đố, cây của cả nhà -----
   function homeOpen() { var p = document.getElementById("homePanel"); p.className = "panel open"; p.innerHTML = ""; return p; }
   function homeClose(p) { var x = el("button", "send alt", "Đóng"); x.onclick = function () { p.className = "panel"; p.innerHTML = ""; }; p.appendChild(x); }
@@ -434,7 +552,7 @@
     if (i === undefined) {
       p.appendChild(el("b", "", "📖 Chọn một truyện"));
       var c = el("div", "choices");
-      STORIES.forEach(function (s, j) { var b = el("button", "", s.t); b.onclick = function () { homeRead(j); }; c.appendChild(b); });
+      STORIES.forEach(function (s, j) { var av = avgOf("s" + j); var b = el("button", "", s.t + (av ? "  " + av.avg.toFixed(1) + "★" : "")); b.onclick = function () { homeRead(j); }; c.appendChild(b); });
       p.appendChild(c);
       p.appendChild(el("p", "legend", "Muốn nhận điểm thưởng, vào góc của con rồi đọc ở đó."));
     } else {
@@ -447,14 +565,17 @@
   function homeQuiz() {
     var p = homeOpen();
     p.appendChild(el("b", "", "❓ Chọn trò chơi"));
-    GAMES.forEach(function (g) {
+    GAMES.forEach(function (g, gi) {
       var a = el("a", "send", g.t); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a);
+      var av = avgOf("g" + gi);
+      p.appendChild(el("p", "legend", g.t + ": " + (av ? av.avg.toFixed(1) + "★ (" + av.n + " bé)" : "chưa có đánh giá")));
     });
     homeClose(p);
   }
   function homeTree() {
     var p = homeOpen(), o = loadP();
-    p.appendChild(el("b", "", "🌳 Cây của cả nhà"));
+    p.appendChild(el("b", "", "🍇 Cây nho nhà mình: 3 nhánh, 1 gốc"));
+    var vn = el("div"); vn.innerHTML = vineHTML(""); p.appendChild(vn);
     KIDS.forEach(function (k) {
       if (k.parent) return;
       var d = o[k.name] || { pts: 0, fed: 0 }, st = STAGES[0];
@@ -474,6 +595,7 @@
     rd.appendChild(el("b", "", s.t));
     s.p.forEach(function (x) { rd.appendChild(el("p", "", x)); });
     var o = loadP(), d = pOf(o, viewing.name), got = !!d.done[ds(new Date()) + "|s" + i];
+    rd.appendChild(starRow("s" + i, own, function () { openStory(i); renderPlay(); }));
     if (own) {
       var b = el("button", "send", got ? "Hôm nay đã nhận điểm" : "Con đã đọc xong (+" + READ_PTS + ")");
       b.disabled = got;
@@ -484,12 +606,52 @@
     rd.appendChild(x);
   }
 
+  // ----- Thu gọn khung giờ ngủ/đêm để bớt chiếm chỗ -----
+  var SHOW_ALL = false, CH = 34, LAY = { segs: [], total: 0 };
+  function isCol(t) { return LAY.segs.some(function (s) { return s.col && t >= s.a && t < s.b; }); }
+  function ypos(t) {
+    var segs = LAY.segs, i, s;
+    for (i = 0; i < segs.length; i++) {
+      s = segs[i];
+      if (t >= s.a && t <= s.b) return s.y0 + (s.col ? (t - s.a) / (s.b - s.a) * CH : (t - s.a) / STEP * PX);
+    }
+    return LAY.total;
+  }
+  function buildLayout() {
+    var ranges = [], base = viewing.parent ? [[0, 300], [1320, 1440]] : [[0, 390], [1260, 1440]], busy = [], i;
+    if (!SHOW_ALL) {
+      var props = load();
+      for (i = 0; i < span; i++) {
+        var d = addDays(startDate, i), dateS = ds(d);
+        fixedOf(viewing, wd(d), d).forEach(function (b) { if (!/ngủ/i.test(b.label)) busy.push([b.s, b.e]); });
+        props.forEach(function (p) { if (p.who === viewing.name && p.date === dateS) busy.push([p.s, p.s + p.dur]); });
+      }
+      base.forEach(function (r) {
+        var a = r[0], b = r[1];
+        if (a === 0) { busy.forEach(function (x) { if (x[0] < b) b = Math.min(b, x[0]); }); b = Math.floor(b / 30) * 30; }
+        else { busy.forEach(function (x) { if (x[1] > a) a = Math.max(a, x[1]); }); a = Math.ceil(a / 30) * 30; }
+        if (b - a >= 120) ranges.push([a, b]);
+      });
+    }
+    var segs = [], pos = 0, y = 0;
+    function add(a, b, col) { var h = col ? CH : (b - a) / STEP * PX; segs.push({ a: a, b: b, col: col, y0: y, h: h }); y += h; }
+    ranges.sort(function (p, q) { return p[0] - q[0]; }).forEach(function (r) {
+      if (r[0] > pos) add(pos, r[0], false);
+      add(r[0], r[1], true); pos = r[1];
+    });
+    if (pos < 1440) add(pos, 1440, false);
+    LAY = { segs: segs, total: y };
+  }
+
   function render() {
     var cal = document.getElementById("cal"), head = document.getElementById("dhead");
     cal.innerHTML = ""; head.innerHTML = "";
     renderTodo();
     renderPlay();
-    cal.style.height = ((T1 - T0) / STEP * PX) + "px";
+    document.getElementById("addFixed").style.display = canEdit() ? "" : "none";
+    buildLayout();
+    cal.style.height = LAY.total + "px";
+    document.getElementById("toggleNight").textContent = SHOW_ALL ? "😴 Thu gọn giờ ngủ" : "🕐 Hiện cả 24 giờ";
     var todayS = ds(new Date()), t, i;
     var endDate = addDays(startDate, span - 1);
     document.getElementById("monthLbl").textContent = startDate.getMonth() === endDate.getMonth()
@@ -500,12 +662,20 @@
     });
 
     for (t = T0; t < T1; t += 60) {
+      if (isCol(t)) continue;
       var h = el("div", "hl", hm(t));
-      h.style.top = ((t - T0) / STEP * PX) + "px";
+      h.style.top = ypos(t) + "px";
       cal.appendChild(h);
     }
     var cols = el("div", "cols");
     cal.appendChild(cols);
+    LAY.segs.forEach(function (sg) {
+      if (!sg.col) return;
+      var st = el("div", "nightbar", "😴 " + hm(sg.a) + "–" + hm(sg.b) + " · bấm để mở");
+      st.style.top = sg.y0 + "px"; st.style.height = (CH - 2) + "px";
+      st.onclick = function () { SHOW_ALL = true; render(); };
+      cal.appendChild(st);
+    });
     var props = load();
 
     for (i = 0; i < span; i++) {
@@ -517,16 +687,18 @@
         col.style.left = (i * 100 / span) + "%";
         col.style.width = (100 / span) + "%";
         fixedOf(viewing, wd(d), d).forEach(function (b) {
-          var x = el("div", "fixb", hm(b.s) + " " + b.label);
-          x.style.top = ((b.s - T0) / STEP * PX) + "px";
-          x.style.height = ((b.e - b.s) / STEP * PX - 2) + "px";
+          if (LAY.segs.some(function (sg) { return sg.col && b.s >= sg.a && b.e <= sg.b; })) return;
+          var x = el("div", "fixb", hm(b.s) + " " + b.label + (b.id ? " ✎" : ""));
+          if (canEdit()) { x.style.cursor = "pointer"; x.onclick = function () { openFixed(b, dateS, wd(d)); }; }
+          x.style.top = ypos(b.s) + "px";
+          x.style.height = (ypos(b.e) - ypos(b.s) - 2) + "px";
           col.appendChild(x);
         });
         for (var tt = T0; tt < T1; tt += STEP) {
-          if (!isFree(viewing.name, dateS, tt, STEP)) continue;
+          if (isCol(tt) || !isFree(viewing.name, dateS, tt, STEP)) continue;
           (function (start) {
             var c = el("div", "cell");
-            c.style.top = ((start - T0) / STEP * PX) + "px";
+            c.style.top = ypos(start) + "px";
             c.style.height = (PX - 1) + "px";
             c.onclick = function () { openAdd(dateS, start); };
             col.appendChild(c);
@@ -539,8 +711,8 @@
           x.style.borderColor = p.status === "ok" ? "#2f9e44" : p.status === "chg" ? "#f08c00" : p.status === "no" ? "#e03131" : colr;
           x.style.borderLeftColor = colr;
           x.textContent = hm(p.s) + " " + p.purpose + (p.note ? " · " + p.note : "");
-          x.style.top = ((p.s - T0) / STEP * PX) + "px";
-          x.style.height = (p.dur / STEP * PX - 2) + "px";
+          x.style.top = ypos(p.s) + "px";
+          x.style.height = (ypos(p.s + p.dur) - ypos(p.s) - 2) + "px";
           x.onclick = function (e) { e.stopPropagation(); openDetail(p); };
           col.appendChild(x);
         });
@@ -640,7 +812,7 @@
     document.getElementById("schedTitle").textContent = "Lịch của " + k.name + (k.lop ? " · lớp " + k.lop : "");
     closePanel();
     render();
-    document.getElementById("calwrap").scrollTop = (SCROLL_TO - T0) / STEP * PX;
+    document.getElementById("calwrap").scrollTop = ypos(SCROLL_TO);
   }
 
   KIDS.forEach(function (k) {
