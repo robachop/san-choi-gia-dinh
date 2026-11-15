@@ -1307,12 +1307,23 @@
   // ===== Câu gốc tuần này (mỗi bé một thẻ, sửa được) =====
   var VKEY = "sc_verse";
   var VERSE_DEFAULT = { "Xoài": { ref: "Lu-ca 6:27", text: "Nhưng ta phán cùng các ngươi, là người nghe ta: Hãy yêu kẻ thù mình, làm ơn cho kẻ ghét mình,", note: "Bản Truyền Thống 1925. Nếu lớp dùng bản hiệu đính, bấm ✎ Sửa để đổi cho khớp." } };
+  // Câu gốc mới: từ ngày "from" thay câu cũ, trừ khi bé/ba mẹ đã tự sửa SAU ngày đó. Bản Truyền Thống 1925.
+  var VERSE_NEXT = { from: "2026-11-15", by: {
+    "Xoài": { ref: "Gia-cơ 5:8", text: "Anh em cũng vậy hãy nhịn nhục và bền lòng; vì kỳ Chúa đến gần rồi.", note: "Bản Truyền Thống 1925. Nếu lớp dùng bản hiệu đính, bấm ✎ Sửa để đổi cho khớp." },
+    "Tín": { ref: "Gia-cơ 4:1", text: "Những điều chiến đấu tranh cạnh trong anh em bởi đâu mà đến? Há chẳng phải từ tình dục anh em vẫn hay tranh chiến trong quan thể mình sao?", note: "Bản Truyền Thống 1925. Nếu lớp dùng bản hiệu đính, bấm ✎ Sửa để đổi cho khớp." },
+    "Nho": { ref: "Gia-cơ 5:8", text: "Anh em cũng vậy hãy nhịn nhục và bền lòng; vì kỳ Chúa đến gần rồi.", note: "Bản Truyền Thống 1925. Nếu lớp dùng bản hiệu đính, bấm ✎ Sửa để đổi cho khớp." } } };
+  function verseOf(name) {
+    var st = loadV()[name] || null, d = new Date(), today = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    var fromTs = new Date(VERSE_NEXT.from + "T00:00:00").getTime();
+    if (VERSE_NEXT.by[name] && today >= VERSE_NEXT.from && !(st && st.ts >= fromTs)) return VERSE_NEXT.by[name];
+    return st || VERSE_DEFAULT[name] || null;
+  }
   function loadV() { try { return JSON.parse(localStorage.getItem(VKEY)) || {}; } catch (e) { return {}; } }
   function saveV(o) { try { localStorage.setItem(VKEY, JSON.stringify(o)); } catch (e) {} }
   function renderVerse() {
     var box = document.getElementById("verseCard");
     if (!viewing || viewing.parent) { box.innerHTML = ""; return; }
-    var v = loadV()[viewing.name] || VERSE_DEFAULT[viewing.name] || null;
+    var v = verseOf(viewing.name);
     box.innerHTML = "";
     var card = el("div", "verse");
     if (canEdit()) {
@@ -1323,7 +1334,7 @@
         var r = el("input", "fld"); r.placeholder = "Chỗ Kinh Thánh (ví dụ: Lu-ca 6:27)"; r.value = v ? v.ref : "";
         var tx = el("textarea", "fld"); tx.rows = 3; tx.placeholder = "Nội dung câu gốc"; tx.value = v ? v.text : "";
         var ok = el("button", "send good", "Lưu"), no = el("button", "send alt", "Thôi");
-        ok.onclick = function () { var o = loadV(); o[viewing.name] = { ref: r.value.trim(), text: tx.value.trim() }; saveV(o); renderVerse(); };
+        ok.onclick = function () { var o = loadV(); o[viewing.name] = { ref: r.value.trim(), text: tx.value.trim(), ts: Date.now() }; saveV(o); renderVerse(); };
         no.onclick = renderVerse;
         card.appendChild(r); card.appendChild(tx); card.appendChild(ok); card.appendChild(no);
       };
