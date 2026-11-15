@@ -1937,7 +1937,18 @@
     box.appendChild(r);
   }
   function musicBtn(txt, cls, fn) { var b = el("button", "send " + cls, txt); b.onclick = fn; return b; }
+  // Vẽ lại danh sách nhạc nhưng giữ nguyên chỗ đang cuộn (bấm ♥ xong không bị nhảy về đầu danh sách)
   function renderMusic() {
+    var dt0 = document.querySelector("#musicBody details.sugfold"), sc0 = dt0 && dt0.lastChild;
+    var inner = sc0 ? sc0.scrollTop : 0, top0 = dt0 ? dt0.getBoundingClientRect().top : 0;
+    renderMusic0();
+    var dt1 = document.querySelector("#musicBody details.sugfold");
+    if (dt1 && dt0) {
+      if (dt1.lastChild) dt1.lastChild.scrollTop = inner;
+      var d = dt1.getBoundingClientRect().top - top0; if (d) window.scrollBy(0, d);
+    }
+  }
+  function renderMusic0() {
     var zone = document.getElementById("musicZone"), box = document.getElementById("musicBody");
     if (!zone) return;
     if (!me || !viewing || (viewing.parent && !me.parent)) { zone.style.display = "none"; MUSIC_PLAY = null; box.innerHTML = ""; return; }
@@ -2071,7 +2082,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611151449";
+  var APP_VER = "202611151933";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
