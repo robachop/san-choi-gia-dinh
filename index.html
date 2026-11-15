@@ -179,6 +179,15 @@
   .send { border:0; border-radius:12px; background:var(--ink); color:#fff; padding:10px 16px; font:inherit; cursor:pointer; margin:10px 8px 0 0; }
   .send.alt { background:#868e96; }
   .send.good { background:#2f9e44; } .send.warn { background:#f08c00; } .send.bad { background:#e03131; }
+.scoretb{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:14px}
+.scoretb th,.scoretb td{padding:5px 6px;text-align:center;border-bottom:1px solid rgba(0,0,0,.1)}
+.scoretb td:first-child,.scoretb th:first-child{text-align:left;font-weight:700}
+.scorerow{display:flex;align-items:flex-end;gap:8px;margin:6px 0}
+.scorename{min-width:64px;font-weight:700;font-size:14px}
+.scorebars{display:flex;gap:4px;flex:1;align-items:flex-end}
+.scorecol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0}
+.scorecol i{display:block;width:100%;max-width:26px;border-radius:4px 4px 0 0}
+.scorecol small{font-size:10px;white-space:nowrap;color:#555}
 </style>
 </head>
 <body>
@@ -199,6 +208,8 @@
 
     <h2>🍇 Cây nho nhà mình</h2>
     <div class="item" id="homeVine"></div>
+    <h2>🏆 Bảng điểm cả nhà</h2>
+    <div class="item" id="homeScore"></div>
     <div class="grid" style="display:none">
       <div class="tile" id="tRead" style="cursor:pointer;display:none"><span>📖</span>Bài đọc<small>3 truyện ngắn</small></div>
       <div class="tile" id="tQuiz" style="cursor:pointer;display:none"><span>❓</span>Câu đố<small>Câu đố · ô chữ · tôi là ai</small></div>
@@ -704,13 +715,45 @@
     { t: "Dế Mèn phiêu lưu ký: Xếp trận", dm: true, d: "Hai đội Xanh và Đỏ, mỗi đội có 5 nhân vật. Mỗi đội bí mật xếp 5 nhân vật vào 5 ô thi đấu rồi úp lại. Khi mở, ô nào nhân vật mạnh hơn thì thắng ô đó. Đội thắng nhiều ô hơn thắng cả trận!" }
   ];
   var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
-  function loadP() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
-  function saveP(o) { try { localStorage.setItem(PKEY, JSON.stringify(o)); } catch (e) {} }
+  // SỔ CÁI ĐIỂM: mỗi lần được điểm / bón cây là một dòng riêng, các máy chỉ cộng dồn (không máy nào ghi đè điểm của máy khác).
+  //   e["Tên|ngày|mã"] = số điểm kiếm được (mã s# truyện, g# trò chơi)   f["Tên|mã lần bón"] = ngày bón (mỗi lần tốn FEED_COST)
+  var LKEY = "sc_ledger";
+  function loadL() { try { var o = JSON.parse(localStorage.getItem(LKEY)); if (o && o.e && o.f) return o; } catch (e) {} return { e: {}, f: {} }; }
+  function saveL(o) { try { localStorage.setItem(LKEY, JSON.stringify(o)); } catch (e) {} }
   function pOf(o, name) { if (!o[name]) o[name] = { pts: 0, fed: 0, done: {} }; return o[name]; }
+  // Dạng tóm tắt {Tên: {pts, fed, done}} tính từ sổ cái (các hàm vẽ màn hình dùng dạng này)
+  function loadP() {
+    var L = loadL(), o = {};
+    Object.keys(L.e).forEach(function (k) { var i = k.indexOf("|"), d = pOf(o, k.slice(0, i)); d.done[k.slice(i + 1)] = 1; d.pts += +L.e[k] || 0; });
+    Object.keys(L.f).forEach(function (k) { var d = pOf(o, k.slice(0, k.indexOf("|"))); d.fed += 1; d.pts -= FEED_COST; });
+    Object.keys(o).forEach(function (w) { if (o[w].pts < 0) o[w].pts = 0; });
+    return o;
+  }
+  // Nhập điểm kiểu cũ {pts, fed, done} (máy chưa nâng cấp) vào sổ cái — chỉ thêm, không bao giờ bớt
+  function mergeLegacyP(w, d) {
+    var L = loadL(), ch = false, k, n;
+    Object.keys((d && d.done) || {}).forEach(function (r) { k = w + "|" + r; if (L.e[k] === undefined) { L.e[k] = (r.split("|")[1] || "").charAt(0) === "g" ? GAME_PTS : READ_PTS; ch = true; } });
+    for (n = 1; n <= ((d && d.fed) || 0); n++) { k = w + "|L" + n; if (L.f[k] === undefined) { L.f[k] = "-"; ch = true; } }
+    if (ch) saveL(L);
+    return ch;
+  }
+  (function () {
+    try {
+      if (localStorage.getItem("sc_ledger_mig")) return;
+      var old = JSON.parse(localStorage.getItem(PKEY)) || {};
+      Object.keys(old).forEach(function (w) { mergeLegacyP(w, old[w]); });
+      localStorage.setItem("sc_ledger_mig", "1");
+    } catch (e) {}
+  })();
   function earn(key, pts) {
-    var o = loadP(), d = pOf(o, viewing.name), day = ds(new Date());
-    if (d.done[day + "|" + key]) return;
-    d.done[day + "|" + key] = 1; d.pts += pts; saveP(o); renderPlay();
+    var L = loadL(), k = viewing.name + "|" + ds(new Date()) + "|" + key;
+    if (L.e[k] !== undefined) return;
+    L.e[k] = pts; saveL(L); renderPlay();
+  }
+  function ptsOnDay(L, name, day) {
+    var t = 0, pre = name + "|" + day + "|";
+    Object.keys(L.e).forEach(function (k) { if (k.indexOf(pre) === 0) t += +L.e[k] || 0; });
+    return t;
   }
   function renderPlay() {
     var wrap = document.getElementById("play");
@@ -732,9 +775,9 @@
       var f = el("button", "send good", "Bón cây (−" + FEED_COST + " điểm)");
       f.disabled = d.pts < FEED_COST;
       f.onclick = function () {
-        var p = loadP(), q = pOf(p, viewing.name);
+        var p = loadP(), q = pOf(p, viewing.name), L = loadL();
         if (q.pts < FEED_COST) return;
-        q.pts -= FEED_COST; q.fed += 1; saveP(p); renderPlay();
+        L.f[viewing.name + "|" + Date.now() + Math.floor(Math.random() * 1000)] = ds(new Date()); saveL(L); renderPlay();
       };
       tr.appendChild(f);
       if (d.pts < FEED_COST) tr.appendChild(el("p", "legend", "Đọc truyện hoặc chơi để có thêm điểm nhé."));
@@ -1027,6 +1070,56 @@
       box.appendChild(el("p", "", k.icon + " " + k.name + ": " + st[1] + " " + st[2] + " · bón " + d.fed + " lần · ⭐ " + d.pts));
     });
     box.appendChild(el("p", "legend", "Vào góc của con để đọc truyện, chơi và bón nho."));
+    renderScore();
+  }
+  // Bảng điểm: điểm kiếm được từng ngày (đọc truyện + chơi) và việc đã xong, của 3 bé — dữ liệu gộp từ mọi máy qua Sheet
+  function renderScore() {
+    var box = document.getElementById("homeScore"); if (!box) return;
+    box.innerHTML = "";
+    var L = loadL(), P = loadP(), kids = KIDS.filter(function (k) { return !k.parent; }), now = new Date(), days = [], i, mx = 10;
+    for (i = 6; i >= 0; i--) { var dd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); days.push({ d: dd, s: ds(dd) }); }
+    var rows = kids.map(function (k) {
+      var per = days.map(function (x) { return ptsOnDay(L, k.name, x.s); });
+      per.forEach(function (v) { if (v > mx) mx = v; });
+      var earned = 0; Object.keys(L.e).forEach(function (q) { if (q.indexOf(k.name + "|") === 0) earned += +L.e[q] || 0; });
+      return { k: k, per: per, today: per[6], yest: per[5], week: per.reduce(function (a, b) { return a + b; }, 0), earned: earned, have: (P[k.name] || { pts: 0 }).pts, ts: doneStat(k, days[6].d), ys: doneStat(k, days[5].d) };
+    });
+    var tb = el("table", "scoretb");
+    var hd = el("tr"); ["Bé", "Hôm qua", "Hôm nay", "7 ngày", "Tổng kiếm", "Đang có"].forEach(function (h) { hd.appendChild(el("th", "", h)); });
+    tb.appendChild(hd);
+    rows.forEach(function (r) {
+      var tr = el("tr"); tr.appendChild(el("td", "", r.k.icon + " " + r.k.name));
+      [r.yest, r.today, r.week, r.earned, r.have].forEach(function (v) { tr.appendChild(el("td", "", "⭐ " + v)); });
+      tb.appendChild(tr);
+    });
+    box.appendChild(tb);
+    var tbd = el("table", "scoretb");
+    var h2 = el("tr"); ["Việc xong", "Hôm qua", "Hôm nay"].forEach(function (h) { h2.appendChild(el("th", "", h)); });
+    tbd.appendChild(h2);
+    rows.forEach(function (r) {
+      var tr = el("tr"); tr.appendChild(el("td", "", r.k.icon + " " + r.k.name));
+      tr.appendChild(el("td", "", r.ys.done + "/" + r.ys.total)); tr.appendChild(el("td", "", r.ts.done + "/" + r.ts.total));
+      tbd.appendChild(tr);
+    });
+    box.appendChild(tbd);
+    box.appendChild(el("b", "", "7 ngày gần đây (điểm mỗi ngày)"));
+    var DN = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    rows.forEach(function (r) {
+      var line = el("div", "scorerow"); line.appendChild(el("span", "scorename", r.k.icon + " " + r.k.name));
+      var bars = el("div", "scorebars");
+      r.per.forEach(function (v, j) {
+        var c = el("div", "scorecol"), b = el("i", ""), lab = el("small", "", DN[days[j].d.getDay()] + (v ? " " + v : ""));
+        b.style.height = Math.max(2, Math.round(v / mx * 44)) + "px"; b.style.background = r.k.color;
+        c.appendChild(b); c.appendChild(lab); bars.appendChild(c);
+      });
+      line.appendChild(bars); box.appendChild(line);
+    });
+    box.appendChild(el("p", "legend", "Điểm kiếm khi đọc truyện và chơi trò chơi (mỗi truyện/trò chơi một lần mỗi ngày). Bảng gộp từ mọi máy các con dùng, mỗi bé cùng cố gắng nhé!"));
+  }
+  function doneStat(k, date) {
+    var st = loadTodo(), day = ds(date), items = todoItems(k, wd(date)).concat(customOf(k, day).map(function (x) { return x.text; })), done = 0;
+    items.forEach(function (l) { if ((st[k.name + "|" + day + "|" + l] || "") === "Xong") done++; });
+    return { done: done, total: items.length };
   }
   document.getElementById("tRead").onclick = function () { homeRead(); };
   document.getElementById("tQuiz").onclick = homeQuiz;
@@ -1834,7 +1927,7 @@
 
   // ===== Đồng bộ giữa các máy qua Google Sheet + Apps Script (xem apps-script/Code.gs) =====
   // Mỗi mục dữ liệu = 1 bản ghi {k, u, v}; bản có u (mốc thời gian) mới hơn thắng. Chỉ gửi phần thay đổi.
-  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM, N: saveN, V: saveV, U: saveU };
+  var RAW = { R: saveR, W: saveW, T: saveTodo, L: saveL, C: save, M: saveM, N: saveN, V: saveV, U: saveU };
   var SYNC = { msg: "", timer: null, busy: false };
   function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -1844,11 +1937,12 @@
   function syncCode() { return sget("sc_code") || ""; }
   function syncReady() { return !!syncUrl(); }
   function syncBuild() {
-    var rec = {}, R = loadR(), W = loadW(), T = loadTodo(), P = loadP(), C = load();
+    var rec = {}, R = loadR(), W = loadW(), T = loadTodo(), L = loadL(), C = load();
     Object.keys(R).forEach(function (w) { Object.keys(R[w]).forEach(function (k) { rec["r|" + w + "|" + k] = String(R[w][k]); }); });
     Object.keys(W).forEach(function (w) { Object.keys(W[w]).forEach(function (k) { rec["w|" + w + "|" + k] = JSON.stringify(W[w][k]); }); });
     Object.keys(T).forEach(function (k) { rec["t|" + k] = String(T[k]); });
-    Object.keys(P).forEach(function (w) { rec["p|" + w] = JSON.stringify(P[w]); });
+    Object.keys(L.e).forEach(function (k) { rec["e|" + k] = String(L.e[k]); });
+    Object.keys(L.f).forEach(function (k) { rec["f|" + k] = String(L.f[k]); });
     C.forEach(function (p) { rec["c|" + p.id] = JSON.stringify(p); });
     loadM().forEach(function (m) { rec["m|" + m.id] = JSON.stringify(m); });
     loadN().forEach(function (n) { rec["n|" + n.id] = JSON.stringify(n); });
@@ -1864,7 +1958,9 @@
       if (ty === "r") { var R = loadR(); (R[w] = R[w] || {})[key] = +v; RAW.R(R); }
       else { var W = loadW(); (W[w] = W[w] || {})[key] = JSON.parse(v); RAW.W(W); }
     } else if (ty === "t") { var T = loadTodo(); T[rest] = v; RAW.T(T); }
-    else if (ty === "p") { var P = loadP(); P[rest] = JSON.parse(v); RAW.P(P); }
+    else if (ty === "e") { var Le = loadL(); if (Le.e[rest] === undefined) { Le.e[rest] = +v || 0; RAW.L(Le); } }
+    else if (ty === "f") { var Lf = loadL(); if (Lf.f[rest] === undefined) { Lf.f[rest] = v; RAW.L(Lf); } }
+    else if (ty === "p") { mergeLegacyP(rest, JSON.parse(v)); }
     else if (ty === "n") {
       var no = JSON.parse(v), na = loadN(), nh = false;
       na.forEach(function (x, j) { if (x.id === no.id) { na[j] = no; nh = true; } });
@@ -1933,7 +2029,7 @@
   saveR = function (o) { RAW.R(o); scheduleSync(); };
   saveW = function (o) { RAW.W(o); scheduleSync(); };
   saveTodo = function (o) { RAW.T(o); scheduleSync(); };
-  saveP = function (o) { RAW.P(o); scheduleSync(); };
+  saveL = function (o) { RAW.L(o); scheduleSync(); };
   save = function (a) { RAW.C(a); scheduleSync(); };
   saveM = function (a) { RAW.M(a); scheduleSync(); };
   saveN = function (a) { RAW.N(a); scheduleSync(); };
