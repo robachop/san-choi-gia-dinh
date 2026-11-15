@@ -141,6 +141,12 @@
   .noteitem small { display:block; opacity:.7; }
   .noteitem .send { padding:6px 12px; font-size:.9rem; margin:6px 6px 0 0; }
   .znotes { background:#fff0f6; border-color:#d6336c; }
+  .zmusic { background:#e3fafc; border-color:#1098ad; }
+  .zmusic .zonehead { background:#1098ad; }
+  .zmusic .send { background:#1098ad; }
+  .zmusic .send.alt { background:#868e96; }
+  .zmusic .send.bad { background:#e03131; }
+  .zmusic .send.good { background:#2f9e44; }
   .znotes .zonehead { background:#d6336c; }
   .verse { margin-top:12px; background:#fff9db; border:3px solid #f59f00; border-radius:18px; padding:10px 14px; }
   .verse .vh { font-weight:800; color:#e67700; letter-spacing:.04em; }
@@ -245,6 +251,8 @@
         <div class="item" id="tree"></div>
       </section>
     </div>
+
+    <section class="zone zmusic" id="musicZone" style="display:none"><div class="zonehead">🎵 NGHE NHẠC</div><div id="musicBody"></div></section>
 
     <section class="zone znotes" id="kidNotes" style="display:none"><div class="zonehead">💬 GHI CHÚ CÁC CON GỬI</div><div id="kidNotesBody"></div></section>
 
@@ -646,7 +654,8 @@
   var GAMES = [
     { t: "Câu đố Kinh Thánh", d: "Thử trả lời các câu đố về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
     { t: "Trò chơi ô chữ", d: "Giải ô chữ để học thêm về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
-    { t: "Trò chơi Tôi là ai?", d: "Đoán xem nhân vật là ai qua các gợi ý. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." }
+    { t: "Trò chơi Tôi là ai?", d: "Đoán xem nhân vật là ai qua các gợi ý. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
+    { t: "Dế Mèn phiêu lưu ký: Xếp trận", dm: true, d: "Hai đội Xanh và Đỏ, mỗi đội có 5 nhân vật. Mỗi đội bí mật xếp 5 nhân vật vào 5 ô thi đấu rồi úp lại. Khi mở, ô nào nhân vật mạnh hơn thì thắng ô đó. Đội thắng nhiều ô hơn thắng cả trận!" }
   ];
   var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
   function loadP() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
@@ -941,6 +950,7 @@
     var p = homeOpen();
     p.appendChild(el("b", "", "❓ Chọn trò chơi"));
     GAMES.forEach(function (g, gi) {
+      if (g.dm) { p.appendChild(el("p", "legend", g.t + ": chơi trong góc của từng bé")); return; }
       var a = el("a", "send", g.t); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a);
       var av = avgOf("g" + gi);
       p.appendChild(el("p", "legend", g.t + ": " + (av ? av.avg.toFixed(1) + "★ (" + av.n + " bé)" : "chưa có đánh giá")));
@@ -976,6 +986,182 @@
   document.getElementById("tQuiz").onclick = homeQuiz;
   document.getElementById("tTree").onclick = homeTree;
 
+  // ----- Trò chơi Dế Mèn phiêu lưu ký: Xếp trận (2 đội Xanh/Đỏ cùng máy, hoặc đấu với máy) -----
+  var DM_CH = [{ n: "Dế Choắt", p: 1 }, { n: "Xiến Tóc", p: 2 }, { n: "Dế Mèn", p: 3 }, { n: "Bọ Ngựa", p: 4 }, { n: "Chị Cốc", p: 5 }];
+  var DM_COL = { blue: "#1971c2", red: "#e03131" }, DM_NAME = { blue: "🔵 Đội Xanh", red: "🔴 Đội Đỏ" };
+  var DM = null, DM_UID = 0;
+  // Hình vẽ nhân vật (SVG tự vẽ, không dùng ảnh ngoài)
+  function dmCricket(u, c) {
+    var t = c.thin;
+    return '<defs><linearGradient id="dmb' + u + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c.b1 + '"/><stop offset=".55" stop-color="' + c.b2 + '"/><stop offset="1" stop-color="' + c.b3 + '"/></linearGradient>' +
+      '<linearGradient id="dmw' + u + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c.w1 + '"/><stop offset="1" stop-color="' + c.w2 + '"/></linearGradient></defs>' +
+      '<path d="M70 52 C80 30 92 20 98 10 M72 50 C86 36 96 34 99 30" stroke="' + c.l + '" stroke-width="1.3" fill="none" stroke-linecap="round"' + (c.droop ? ' transform="rotate(14 72 50)"' : '') + '/>' +
+      '<path d="M26 70 L14 86 L8 92 M26 72 L20 90 L14 95" stroke="' + c.l + '" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M44 66 L40 86 M52 66 L52 88 M60 64 L66 86 L70 90" stroke="' + c.l + '" stroke-width="' + (t ? 2.2 : 3) + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<ellipse cx="26" cy="64" rx="' + (t ? 13 : 17) + '" ry="' + (t ? 8 : 12) + '" fill="url(#dmb' + u + ')" transform="rotate(-18 26 64)"/>' +
+      '<ellipse cx="46" cy="56" rx="' + (t ? 28 : 30) + '" ry="' + (t ? 9 : 14) + '" fill="url(#dmb' + u + ')"/>' +
+      '<path d="M22 54 C36 40 66 42 72 54 C62 52 40 54 22 54Z" fill="url(#dmw' + u + ')" stroke="' + c.l + '" stroke-width=".6"/>' +
+      '<path d="M30 52 L58 46 M38 53 L62 49 M46 53 L66 51" stroke="' + c.l + '" stroke-width=".5" opacity=".6"/>' +
+      '<ellipse cx="40" cy="' + (t ? 52 : 49) + '" rx="14" ry="2.6" fill="#fff" opacity=".28"/>' +
+      '<ellipse cx="76" cy="54" rx="' + (t ? 10 : 12) + '" ry="' + (t ? 9 : 11) + '" fill="url(#dmb' + u + ')"/>' +
+      '<circle cx="80" cy="50" r="3.4" fill="#111"/><circle cx="81.2" cy="48.8" r="1.1" fill="#fff"/>' +
+      '<path d="M86 58 L90 62 M86 60 L88 64" stroke="' + c.l + '" stroke-width="1.4" stroke-linecap="round"/>';
+  }
+  function dmArtSvg(ci, u) {
+    var s = "";
+    if (ci === 0) s = dmCricket(u, { thin: 1, droop: 1, b1: "#c9b79c", b2: "#a8967a", b3: "#7d6c54", w1: "#d8ccb6", w2: "#a99a80", l: "#5e5240" });
+    else if (ci === 2) s = dmCricket(u, { b1: "#8a4a1a", b2: "#5d2d0c", b3: "#2e1304", w1: "#b8702a", w2: "#6a3410", l: "#2a1205" });
+    else if (ci === 1) s = '<defs><linearGradient id="dmx' + u + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5a2b"/><stop offset=".6" stop-color="#4a2c12"/><stop offset="1" stop-color="#25140a"/></linearGradient></defs>' +
+      '<path d="M70 46 C84 20 70 8 52 10 C38 12 28 20 24 30 M72 48 C94 34 98 14 86 4" stroke="#3a2412" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
+      '<path d="M30 62 L16 78 M44 70 L38 90 M58 68 L62 90 M62 62 L80 78 M34 60 L20 66" stroke="#2a180a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="42" cy="58" rx="30" ry="14" fill="url(#dmx' + u + ')" transform="rotate(-6 42 58)"/>' +
+      '<path d="M20 56 C34 48 56 50 68 58 M22 62 C36 56 56 58 66 64" stroke="#e0b878" stroke-width="1" fill="none" opacity=".6"/>' +
+      '<ellipse cx="38" cy="50" rx="13" ry="2.4" fill="#fff" opacity=".25"/>' +
+      '<ellipse cx="70" cy="54" rx="9" ry="9" fill="#5a3516"/>' +
+      '<circle cx="74" cy="50" r="2.4" fill="#111"/><circle cx="74.8" cy="49.2" r=".8" fill="#fff"/>' +
+      '<path d="M78 58 L84 62 M78 60 L83 66" stroke="#1d1007" stroke-width="1.6" stroke-linecap="round"/>';
+    else if (ci === 3) s = '<defs><linearGradient id="dmm' + u + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9be15d"/><stop offset=".6" stop-color="#4caf2a"/><stop offset="1" stop-color="#2a7a14"/></linearGradient></defs>' +
+      '<path d="M40 70 L30 92 M52 72 L52 94 M62 70 L72 92" stroke="#3a8d1e" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="36" cy="64" rx="30" ry="8" fill="url(#dmm' + u + ')" transform="rotate(-12 36 64)"/>' +
+      '<path d="M8 66 C24 52 50 50 64 60 C48 62 24 66 8 66Z" fill="#c6ec8f" opacity=".75" stroke="#3a8d1e" stroke-width=".5"/>' +
+      '<path d="M58 66 C64 52 66 40 68 30" stroke="url(#dmm' + u + ')" stroke-width="8" fill="none" stroke-linecap="round"/>' +
+      '<path d="M60 26 L84 24 L74 44Z" fill="url(#dmm' + u + ')"/>' +
+      '<circle cx="64" cy="27" r="4.2" fill="#e8ffc2" stroke="#2a7a14" stroke-width=".8"/><circle cx="64" cy="27" r="1.8" fill="#111"/>' +
+      '<circle cx="80" cy="26" r="3.6" fill="#e8ffc2" stroke="#2a7a14" stroke-width=".8"/><circle cx="80" cy="26" r="1.5" fill="#111"/>' +
+      '<path d="M66 22 C64 12 56 8 50 8 M78 22 C80 12 88 8 94 8" stroke="#2a7a14" stroke-width="1" fill="none"/>' +
+      '<path d="M66 40 L88 36 L84 54 L72 50 M72 44 L82 44 M74 49 L82 49" stroke="#3a8d1e" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M84 36 L90 40 M83 44 L89 47" stroke="#1f5c0e" stroke-width="1.4" stroke-linecap="round"/>';
+    else s = '<defs><linearGradient id="dmc' + u + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4a56"/><stop offset=".5" stop-color="#1b242c"/><stop offset="1" stop-color="#0b0f13"/></linearGradient></defs>' +
+      '<path d="M44 84 L40 94 L34 94 M56 84 L56 94 L62 94" stroke="#e67700" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M18 68 L2 80 L16 76Z" fill="#0b0f13"/>' +
+      '<ellipse cx="46" cy="64" rx="30" ry="20" fill="url(#dmc' + u + ')" transform="rotate(-8 46 64)"/>' +
+      '<path d="M30 62 C40 52 58 54 66 64 M28 70 C40 62 56 64 62 72" stroke="#5c6b78" stroke-width="1" fill="none" opacity=".7"/>' +
+      '<path d="M64 56 C74 52 70 36 66 26" stroke="url(#dmc' + u + ')" stroke-width="9" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="68" cy="20" rx="9" ry="8" fill="#141b21"/>' +
+      '<path d="M74 16 L93 17 C97 17.5 98 22 95.5 24.5 C95.5 21.5 94 20.5 91 20.5 L75 23Z" fill="#e8a317"/>' +
+      '<path d="M72 22 C74 28 70 30 66 30" fill="none"/><circle cx="73" cy="26" r="3.2" fill="#f1f3f5"/>' +
+      '<circle cx="71" cy="18" r="2.8" fill="#2f9e44"/><circle cx="71" cy="18" r="1.2" fill="#000"/><circle cx="71.5" cy="17.4" r=".5" fill="#fff"/>';
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + DM_CH[ci].n + '" style="width:100%;height:100%;display:block">' + s + '</svg>';
+  }
+  function dmReset() { DM = { mode: "", step: "mode", blue: [], red: [], next: 0, wait: false }; }
+  function dmShuffle() { var a = [0, 1, 2, 3, 4], i, j, t; for (i = 4; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function dmBtn(txt, col, fn) { var b = el("button", "send", txt); if (col) b.style.background = col; b.onclick = fn; return b; }
+  function dmStyle() {
+    if (document.getElementById("dmcss")) return;
+    var st = document.createElement("style"); st.id = "dmcss";
+    st.textContent = "@keyframes dmpop{0%{transform:scale(.5) rotateY(90deg);opacity:0}70%{transform:scale(1.12) rotateY(0);opacity:1}100%{transform:none}}@keyframes dmshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.dmpop{animation:dmpop .6s ease-out}.dmshake{animation:dmshake .18s linear infinite}";
+    document.head.appendChild(st);
+  }
+  function dmCard(ci, col, big) {
+    var c = DM_CH[ci], d = el("div"); d.style.cssText = "border:3px solid " + col + ";border-radius:14px;background:#fff;text-align:center;padding:" + (big ? "6px 4px" : "3px 2px") + ";font-weight:700;color:#222;min-width:0";
+    var art = el("div"); art.style.cssText = "width:100%;aspect-ratio:1/1;max-height:" + (big ? "74px" : "62px"); art.innerHTML = dmArtSvg(ci, ++DM_UID); d.appendChild(art);
+    var n = el("div", "", c.n); n.style.fontSize = ".8rem"; d.appendChild(n);
+    var pw = el("div", "", "💪 " + c.p); pw.style.cssText = "font-size:.85rem;color:" + col; d.appendChild(pw);
+    return d;
+  }
+  function dmRender(h) {
+    if (!DM) dmReset();
+    dmStyle();
+    h.innerHTML = "";
+    var again = function () { dmRender(h); };
+    var st = DM.step, side, arr, i;
+    h.style.cssText = "margin-top:12px";
+    if (st === "mode") {
+      h.appendChild(el("p", "", "Mỗi nhân vật có điểm sức mạnh 💪 từ 1 đến 5. Nhân vật có điểm cao hơn thì thắng. Cùng nhân vật thì hòa."));
+      var cs = el("div"); cs.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0";
+      DM_CH.forEach(function (c, ci) { cs.appendChild(dmCard(ci, "#868e96", false)); });
+      h.appendChild(cs);
+      h.appendChild(el("p", "", "Chọn cách chơi:"));
+      h.appendChild(dmBtn("👫 2 bạn (chuyền máy cho nhau)", "#7048e8", function () { DM.mode = "two"; DM.step = "pick1"; again(); }));
+      h.appendChild(dmBtn("🤖 Đấu với máy", "#2f9e44", function () { DM.mode = "cpu"; DM.step = "pick1"; again(); }));
+      return;
+    }
+    if (st === "pick1" || st === "pick2") {
+      side = st === "pick1" ? "blue" : "red"; arr = DM[side];
+      var tt = el("p", "", DM_NAME[side] + ": xếp thứ tự 5 nhân vật vào 5 ô. Bấm nhân vật để đặt vào ô trống kế tiếp; bấm ô để bỏ ra."); tt.style.cssText = "font-weight:700;color:" + DM_COL[side]; h.appendChild(tt);
+      var sl = el("div"); sl.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0";
+      for (i = 0; i < 5; i++) (function (k) {
+        var cell = el("button"); cell.style.cssText = "border:3px dashed " + DM_COL[side] + ";border-radius:14px;background:#f8f9fa;min-height:96px;padding:2px;cursor:pointer";
+        if (arr[k] !== undefined) { cell.style.border = "3px solid " + DM_COL[side]; cell.appendChild(dmCard(arr[k], DM_COL[side], false)); cell.setAttribute("aria-label", "Ô " + (k + 1) + ": " + DM_CH[arr[k]].n + ", bấm để bỏ ra"); }
+        else { cell.textContent = "Ô " + (k + 1); cell.style.fontWeight = "700"; cell.style.color = DM_COL[side]; }
+        cell.onclick = function () { if (arr[k] !== undefined) { arr.splice(k, 1); again(); } };
+        sl.appendChild(cell);
+      })(i);
+      h.appendChild(sl);
+      var tr = el("div"); tr.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0";
+      DM_CH.forEach(function (c, ci) {
+        var b = el("button"); b.style.cssText = "border:0;background:none;padding:0;cursor:pointer";
+        var used = arr.indexOf(ci) >= 0, cd = dmCard(ci, DM_COL[side], true); if (used) cd.style.opacity = ".25";
+        b.appendChild(cd); b.disabled = used;
+        b.onclick = function () { if (arr.length < 5 && arr.indexOf(ci) < 0) { arr.push(ci); again(); } };
+        tr.appendChild(b);
+      });
+      h.appendChild(tr);
+      var ok = dmBtn("🙈 Úp lại (xong, che đi)", DM_COL[side], function () {
+        if (side === "blue") {
+          if (DM.mode === "cpu") { DM.red = dmShuffle(); DM.step = "reveal"; } else DM.step = "pass";
+        } else DM.step = "reveal";
+        again();
+      });
+      ok.disabled = arr.length < 5; h.appendChild(ok);
+      h.appendChild(dmBtn("↺ Xếp lại", "#868e96", function () { DM[side] = []; again(); }));
+      return;
+    }
+    if (st === "pass") {
+      var ps = el("div"); ps.style.cssText = "text-align:center;padding:18px 8px;background:#fff0f0;border:3px solid " + DM_COL.red + ";border-radius:16px";
+      ps.appendChild(el("div", "", "🙈")).style.fontSize = "3rem";
+      ps.appendChild(el("p", "", "Đội Xanh đã úp xong! Đưa máy cho 🔴 Đội Đỏ. Đội Xanh đừng nhìn nhé.")).style.fontWeight = "700";
+      ps.appendChild(dmBtn("🔴 Đội Đỏ sẵn sàng", DM_COL.red, function () { DM.step = "pick2"; again(); }));
+      h.appendChild(ps);
+      return;
+    }
+    // Mở từng trận, lần lượt từ ô 1 đến ô 5
+    var bw = 0, rw = 0, tie = 0;
+    for (i = 0; i < DM.next; i++) { var a = DM_CH[DM.blue[i]].p, b2 = DM_CH[DM.red[i]].p; if (a > b2) bw++; else if (b2 > a) rw++; else tie++; }
+    var hd = el("p", "", DM.next < 5 ? "Hai đội đã úp xong. Mở từng trận một nhé!" : "Đã mở hết 5 trận!"); hd.style.fontWeight = "700"; h.appendChild(hd);
+    for (i = 0; i < 5; i++) (function (k) {
+      var open = k < DM.next, row = el("div");
+      row.style.cssText = "display:grid;grid-template-columns:1fr 38px 1fr;gap:6px;align-items:center;margin:6px 0;padding:4px;border-radius:14px;" + (k === DM.next ? "background:#fff3bf;" : "");
+      var pa = DM_CH[DM.blue[k]].p, pb = DM_CH[DM.red[k]].p;
+      var cellFor = function (sd, arr2, mine, theirs) {
+        var holder = el("div");
+        if (open) {
+          var cd = dmCard(arr2[k], DM_COL[sd], false); holder.appendChild(cd);
+          if (mine > theirs) cd.style.background = sd === "blue" ? "#d0ebff" : "#ffe3e3"; else if (mine < theirs) cd.style.opacity = ".45";
+          if (k === DM.next - 1) cd.className = "dmpop";
+        } else {
+          var q = el("div", "", "❓"); q.style.cssText = "border:3px solid " + DM_COL[sd] + ";border-radius:14px;background:#f1f3f5;text-align:center;font-size:2rem;padding:20px 0";
+          if (k === DM.next && DM.wait) q.className = "dmshake";
+          holder.appendChild(q);
+        }
+        return holder;
+      };
+      row.appendChild(cellFor("blue", DM.blue, pa, pb));
+      var mid = el("div", "", open ? (pa === pb ? "🤝" : pa > pb ? "◀" : "▶") : "Trận " + (k + 1)); mid.style.cssText = "text-align:center;font-weight:800;font-size:" + (open ? "1.3rem" : ".7rem");
+      row.appendChild(mid);
+      row.appendChild(cellFor("red", DM.red, pb, pa));
+      h.appendChild(row);
+    })(i);
+    if (DM.next > 0) {
+      var k2 = DM.next - 1, x = DM_CH[DM.blue[k2]], y = DM_CH[DM.red[k2]];
+      var msg = x.p === y.p ? "Trận " + DM.next + ": " + x.n + " gặp " + y.n + " — hòa!" : x.p > y.p ? "Trận " + DM.next + ": 🔵 " + x.n + " thắng " + y.n + "!" : "Trận " + DM.next + ": 🔴 " + y.n + " thắng " + x.n + "!";
+      var cm = el("p", "", msg); cm.style.cssText = "text-align:center;font-weight:700;margin:6px 0;color:" + (x.p === y.p ? "#495057" : x.p > y.p ? DM_COL.blue : DM_COL.red); h.appendChild(cm);
+    }
+    var sc = el("p", "", "🔵 " + bw + "  –  " + rw + " 🔴" + (tie ? "  (hòa " + tie + " trận)" : "")); sc.style.cssText = "text-align:center;font-weight:800;font-size:1.3rem"; h.appendChild(sc);
+    if (DM.next < 5) {
+      var ob = dmBtn(DM.wait ? "🥁 Đang mở..." : "🥁 Mở trận " + (DM.next + 1), "#7048e8", function () {
+        DM.wait = true; again();
+        setTimeout(function () { DM.wait = false; DM.next++; again(); }, 900);
+      });
+      ob.disabled = DM.wait; h.appendChild(ob);
+    } else {
+      var res = bw > rw ? "🏆 Đội Xanh thắng toàn trận!" : rw > bw ? "🏆 Đội Đỏ thắng toàn trận!" : "🤝 Hòa! Hai đội bằng nhau.";
+      var rr = el("p", "", res); rr.style.cssText = "text-align:center;font-weight:800;font-size:1.4rem;color:" + (bw > rw ? DM_COL.blue : rw > bw ? DM_COL.red : "#495057"); h.appendChild(rr);
+      h.appendChild(dmBtn("🔁 Chơi ván mới", "#2f9e44", function () { var m = DM.mode; dmReset(); DM.mode = m; DM.step = m ? "pick1" : "mode"; again(); }));
+      h.appendChild(dmBtn("⚙ Đổi cách chơi", "#868e96", function () { dmReset(); again(); }));
+    }
+  }
+
   // ----- Sách trò chơi: mỗi trang một trò, lật qua lại; điểm ngay dưới trang -----
   var GBOOK_I = 0;
   function renderGameBook(dir) {
@@ -987,9 +1173,12 @@
     var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
     page.appendChild(el("h3", "", "🎮 " + g.t));
     page.appendChild(el("p", "", g.d));
-    var a = el("a", "send", "▶ Mở trò chơi"); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
-    a.style.cssText = "display:block;text-align:center;font-size:1.2rem;padding:16px;margin:16px 0 4px";
-    page.appendChild(a);
+    if (g.dm) { var dh = el("div", "dmgame"); dmRender(dh); page.appendChild(dh); }
+    else {
+      var a = el("a", "send", "▶ Mở trò chơi"); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
+      a.style.cssText = "display:block;text-align:center;font-size:1.2rem;padding:16px;margin:16px 0 4px";
+      page.appendChild(a);
+    }
     wrap.appendChild(page);
     var got = !!d.done[day + "|g" + GBOOK_I], reward = el("div", "reward");
     if (own) {
@@ -1105,6 +1294,7 @@
     renderSync();
     renderVerse();
     renderKidNotes();
+    renderMusic();
     document.getElementById("fabNote").style.display = (me && !me.parent) ? "block" : "none";
     document.getElementById("addFixed").style.display = canEdit() ? "" : "none";
     buildLayout();
@@ -1390,9 +1580,130 @@
     list.forEach(function (n) { var it = el("div", "noteitem"); it.appendChild(el("div", "", n.text)); it.appendChild(el("small", "", n.who + " · " + ntime(n.ts))); box.appendChild(it); });
   }
 
+  // ===== Nghe nhạc: yêu thích (con tuyển từ danh sách gợi ý), gợi ý (ba mẹ duyệt), yêu cầu bài (con điền) =====
+  // Chỉ phát bằng khung nhúng YouTube (youtube-nocookie). Không lưu file nhạc. Con KHÔNG tự dán link; chỉ ba mẹ thêm/duyệt link.
+  var UKEY = "sc_music", MUSIC_PLAY = null;
+  function loadU() { try { return JSON.parse(localStorage.getItem(UKEY)) || []; } catch (e) { return []; } }
+  function saveU(a) { try { localStorage.setItem(UKEY, JSON.stringify(a)); } catch (e) {} }
+  function musicId(vid) {
+    var m = String(vid || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|music\.youtube\.com\/watch\?(?:.*&)?v=)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/);
+    if (m) return m[1];
+    return /^[A-Za-z0-9_-]{11}$/.test(String(vid || "").trim()) ? String(vid).trim() : "";
+  }
+  function uPut(it) {
+    var a = loadU(), hit = false;
+    a.forEach(function (x, j) { if (x.id === it.id) { a[j] = it; hit = true; } });
+    if (!hit) a.push(it);
+    saveU(a);
+  }
+  function uNewId(p) { return p + Date.now() + Math.floor(Math.random() * 1000); }
+  function musicPlayer(box) {
+    if (!MUSIC_PLAY) return;
+    var w = el("div"); w.style.cssText = "background:#000;border-radius:14px;overflow:hidden;margin:8px 0";
+    var fr = document.createElement("iframe");
+    fr.src = "https://www.youtube-nocookie.com/embed/" + MUSIC_PLAY.vid + "?rel=0&modestbranding=1&playsinline=1&autoplay=1";
+    fr.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture"); fr.setAttribute("allowfullscreen", "");
+    fr.style.cssText = "width:100%;aspect-ratio:16/9;border:0;display:block"; fr.title = MUSIC_PLAY.title;
+    w.appendChild(fr); box.appendChild(w);
+    var t = el("p", "", "🎧 Đang nghe: " + MUSIC_PLAY.title); t.style.fontWeight = "700"; box.appendChild(t);
+    var st = el("button", "send alt", "⏹ Tắt nhạc"); st.onclick = function () { MUSIC_PLAY = null; renderMusic(); }; box.appendChild(st);
+  }
+  function musicRow(box, it, btns) {
+    var r = el("div", "noteitem"); r.appendChild(el("div", "", "🎵 " + it.title));
+    var meta = [];
+    if (it.who && it.kind === "req") meta.push(it.who + " xin");
+    if (meta.length) r.appendChild(el("small", "", meta.join(" · ")));
+    btns.forEach(function (b) { r.appendChild(b); });
+    box.appendChild(r);
+  }
+  function musicBtn(txt, cls, fn) { var b = el("button", "send " + cls, txt); b.onclick = fn; return b; }
+  function renderMusic() {
+    var zone = document.getElementById("musicZone"), box = document.getElementById("musicBody");
+    if (!zone) return;
+    if (!me || !viewing || (viewing.parent && !me.parent)) { zone.style.display = "none"; MUSIC_PLAY = null; box.innerHTML = ""; return; }
+    zone.style.display = "block"; box.innerHTML = "";
+    var all = loadU().filter(function (x) { return !x.del; });
+    var sug = all.filter(function (x) { return x.kind === "sug"; }).sort(function (a, b) { return b.ts - a.ts; });
+    function play(it) { return musicBtn("▶ Nghe", "good", function () { MUSIC_PLAY = { vid: it.vid, title: it.title }; renderMusic(); }); }
+    musicPlayer(box);
+    if (viewing.parent) {
+      // ----- Trang ba mẹ: thêm gợi ý, duyệt yêu cầu -----
+      box.appendChild(el("p", "legend", "Con chỉ nghe được bài trong danh sách gợi ý này. Ba mẹ dán link YouTube (youtube.com hoặc youtu.be) để thêm."));
+      var tt = el("input", "fld"); tt.placeholder = "Tên bài (ví dụ: Chúa là ánh sáng)"; tt.maxLength = 80;
+      var lk = el("input", "fld"); lk.placeholder = "Link YouTube"; lk.maxLength = 200;
+      var add = el("button", "send good", "＋ Thêm vào gợi ý");
+      add.onclick = function () {
+        var vid = musicId(lk.value), ti = tt.value.trim();
+        if (!ti) { tt.focus(); return; }
+        if (!vid) { lk.value = ""; lk.placeholder = "Link chưa đúng — dán lại link YouTube"; lk.focus(); return; }
+        uPut({ id: uNewId("u"), kind: "sug", title: ti, vid: vid, who: me.name, ts: Date.now(), del: false }); renderMusic();
+      };
+      box.appendChild(el("div", "subhead", "➕ Thêm bài gợi ý")); box.appendChild(tt); box.appendChild(lk); box.appendChild(add);
+      var pend = all.filter(function (x) { return x.kind === "req" && x.status === "pending"; }).sort(function (a, b) { return a.ts - b.ts; });
+      box.appendChild(el("div", "subhead", "📥 Con xin bài mới (" + pend.length + ")"));
+      if (!pend.length) box.appendChild(el("p", "legend", "Chưa có yêu cầu nào."));
+      pend.forEach(function (q) {
+        var r = el("div", "noteitem"); r.appendChild(el("div", "", "🎵 " + q.title));
+        r.appendChild(el("small", "", q.who + " xin" + (q.note ? " · " + q.note : "")));
+        var l2 = el("input", "fld"); l2.placeholder = "Dán link YouTube để duyệt"; l2.maxLength = 200; l2.value = musicId(q.note) ? q.note : "";
+        r.appendChild(l2);
+        r.appendChild(musicBtn("✔ Duyệt, thêm vào gợi ý", "good", function () {
+          var vid = musicId(l2.value); if (!vid) { l2.placeholder = "Cần link YouTube đúng để duyệt"; l2.focus(); return; }
+          q.status = "ok"; uPut(q);
+          uPut({ id: uNewId("u"), kind: "sug", title: q.title, vid: vid, who: me.name, from: q.who, ts: Date.now(), del: false }); renderMusic();
+        }));
+        r.appendChild(musicBtn("✖ Chưa được", "bad", function () { q.status = "no"; uPut(q); renderMusic(); }));
+        box.appendChild(r);
+      });
+      box.appendChild(el("div", "subhead", "✨ Danh sách gợi ý hiện có (" + sug.length + ")"));
+      sug.forEach(function (it) { musicRow(box, it, [play(it), musicBtn("Xóa", "bad", function () { it.del = true; uPut(it); renderMusic(); })]); });
+      var favs = all.filter(function (x) { return x.kind === "fav"; });
+      if (favs.length) {
+        box.appendChild(el("div", "subhead", "❤ Các con đang thích"));
+        KIDS.filter(function (k) { return !k.parent; }).forEach(function (k) {
+          var mine = favs.filter(function (f) { return f.who === k.name; });
+          if (mine.length) box.appendChild(el("p", "", k.icon + " " + k.name + ": " + mine.map(function (f) { return f.title; }).join(" · ")));
+        });
+      }
+      return;
+    }
+    // ----- Góc của con -----
+    var own = viewing === me, who = viewing.name;
+    var favs2 = all.filter(function (x) { return x.kind === "fav" && x.who === who; }).sort(function (a, b) { return b.ts - a.ts; });
+    box.appendChild(el("div", "subhead", "❤ Nhạc yêu thích của " + who + " (" + favs2.length + ")"));
+    if (!favs2.length) box.appendChild(el("p", "legend", "Chưa có bài nào. Bấm ♥ ở bài gợi ý bên dưới để thêm vào đây."));
+    favs2.forEach(function (it) { musicRow(box, it, [play(it)].concat(canEdit() ? [musicBtn("Bỏ ♥", "alt", function () { it.del = true; uPut(it); renderMusic(); })] : [])); });
+    box.appendChild(el("div", "subhead", "✨ Ba mẹ gợi ý (" + sug.length + ")"));
+    if (!sug.length) box.appendChild(el("p", "legend", "Ba mẹ chưa thêm bài nào."));
+    sug.forEach(function (it) {
+      var fid = "f_" + who + "_" + it.vid, have = favs2.some(function (f) { return f.vid === it.vid; });
+      var bs = [play(it)];
+      if (own && !have) bs.push(musicBtn("♥ Thêm vào yêu thích", "alt", function () { uPut({ id: fid, kind: "fav", who: who, title: it.title, vid: it.vid, ts: Date.now(), del: false }); renderMusic(); }));
+      else if (have) bs.push(el("small", "", "❤ đã thích"));
+      musicRow(box, it, bs);
+    });
+    box.appendChild(el("div", "subhead", "🙋 Xin bài nhạc mới"));
+    var reqs = all.filter(function (x) { return x.kind === "req" && x.who === who; }).sort(function (a, b) { return b.ts - a.ts; });
+    if (own) {
+      var tn = el("input", "fld"); tn.placeholder = "Tên bài hoặc ca sĩ con muốn nghe"; tn.maxLength = 80;
+      var nt = el("input", "fld"); nt.placeholder = "Ghi thêm (không bắt buộc)"; nt.maxLength = 120;
+      var sb = el("button", "send good", "📨 Gửi cho ba mẹ");
+      sb.onclick = function () {
+        var ti = tn.value.trim(); if (!ti) { tn.focus(); return; }
+        uPut({ id: uNewId("q"), kind: "req", who: who, title: ti, note: nt.value.trim(), status: "pending", ts: Date.now(), del: false }); renderMusic();
+      };
+      box.appendChild(tn); box.appendChild(nt); box.appendChild(sb);
+    }
+    reqs.slice(0, 8).forEach(function (q) {
+      var r = el("div", "noteitem"); r.appendChild(el("div", "", "🎵 " + q.title));
+      r.appendChild(el("small", "", q.status === "ok" ? "✅ Ba mẹ đã duyệt — bài đã vào danh sách gợi ý" : q.status === "no" ? "🙏 Chưa được lúc này" : "⏳ Đang chờ ba mẹ"));
+      box.appendChild(r);
+    });
+  }
+
   // ===== Đồng bộ giữa các máy qua Google Sheet + Apps Script (xem apps-script/Code.gs) =====
   // Mỗi mục dữ liệu = 1 bản ghi {k, u, v}; bản có u (mốc thời gian) mới hơn thắng. Chỉ gửi phần thay đổi.
-  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM, N: saveN, V: saveV };
+  var RAW = { R: saveR, W: saveW, T: saveTodo, P: saveP, C: save, M: saveM, N: saveN, V: saveV, U: saveU };
   var SYNC = { msg: "", timer: null, busy: false };
   function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -1411,6 +1722,7 @@
     loadM().forEach(function (m) { rec["m|" + m.id] = JSON.stringify(m); });
     loadN().forEach(function (n) { rec["n|" + n.id] = JSON.stringify(n); });
     var VV = loadV(); Object.keys(VV).forEach(function (w) { rec["v|" + w] = JSON.stringify(VV[w]); });
+    loadU().forEach(function (u) { rec["u|" + u.id] = JSON.stringify(u); });
     return rec;
   }
   function syncApply(k, v) {
@@ -1427,6 +1739,12 @@
       na.forEach(function (x, j) { if (x.id === no.id) { na[j] = no; nh = true; } });
       if (!nh) na.push(no);
       RAW.N(na);
+    }
+    else if (ty === "u") {
+      var uo = JSON.parse(v), ua = loadU(), uh = false;
+      ua.forEach(function (x, j) { if (x.id === uo.id) { ua[j] = uo; uh = true; } });
+      if (!uh) ua.push(uo);
+      RAW.U(ua);
     }
     else if (ty === "v") { var V2 = loadV(); V2[rest] = JSON.parse(v); RAW.V(V2); }
     else if (ty === "m") {
@@ -1489,6 +1807,7 @@
   saveM = function (a) { RAW.M(a); scheduleSync(); };
   saveN = function (a) { RAW.N(a); scheduleSync(); };
   saveV = function (o) { RAW.V(o); scheduleSync(); };
+  saveU = function (a) { RAW.U(a); scheduleSync(); };
   function renderSync() {
     var wrap = document.getElementById("syncZone"), box = document.getElementById("syncBody");
     if (!viewing || !viewing.parent) { if (wrap) wrap.style.display = "none"; return; }
