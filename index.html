@@ -142,6 +142,8 @@
   .noteitem .send { padding:6px 12px; font-size:.9rem; margin:6px 6px 0 0; }
   .znotes { background:#fff0f6; border-color:#d6336c; }
   .zmusic { background:#e3fafc; border-color:#1098ad; }
+  .sugfold .noteitem { margin-top:5px; padding:5px 10px; font-size:.95rem; }
+  .sugfold .noteitem .send { padding:4px 10px; font-size:.85rem; margin:3px 5px 0 0; }
   .zmusic .zonehead { background:#1098ad; }
   .zmusic .send { background:#1098ad; }
   .zmusic .send.alt { background:#868e96; }
@@ -1087,13 +1089,21 @@
       '<circle cx="71" cy="18" r="2.8" fill="#2f9e44"/><circle cx="71" cy="18" r="1.2" fill="#000"/><circle cx="71.5" cy="17.4" r=".5" fill="#fff"/>';
     return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + DM_CH[ci].n + '" style="width:100%;height:100%;display:block">' + s + '</svg>';
   }
+  function dmLeafSvg(u) {
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Chiếc lá che" style="width:78%;height:78%;display:block"><defs><linearGradient id="dml' + u + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ce99a"/><stop offset=".55" stop-color="#37b24d"/><stop offset="1" stop-color="#1f7a33"/></linearGradient></defs>' +
+      '<path d="M50 96 C48 88 50 82 50 76" stroke="#5c3a1c" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
+      '<path d="M50 78 C10 62 8 22 52 4 C92 24 90 62 50 78Z" fill="url(#dml' + u + ')" stroke="#1f7a33" stroke-width="1.5"/>' +
+      '<path d="M50 78 C50 56 51 30 52 8" stroke="#d8f5a2" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M50.5 64 L28 50 M50.5 54 L74 40 M51 44 L30 30 M51.5 34 L68 22 M50.5 70 L74 58" stroke="#b2f2bb" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".85"/>' +
+      '<path d="M24 34 C28 24 36 16 46 12" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".35"/></svg>';
+  }
   function dmReset() { DM = { mode: "", step: "mode", blue: [], red: [], next: 0, wait: false }; }
   function dmShuffle() { var a = [0, 1, 2, 3, 4], i, j, t; for (i = 4; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function dmBtn(txt, col, fn) { var b = el("button", "send", txt); if (col) b.style.background = col; b.onclick = fn; return b; }
   function dmStyle() {
     if (document.getElementById("dmcss")) return;
     var st = document.createElement("style"); st.id = "dmcss";
-    st.textContent = "@keyframes dmpop{0%{transform:scale(.5) rotateY(90deg);opacity:0}70%{transform:scale(1.12) rotateY(0);opacity:1}100%{transform:none}}@keyframes dmshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.dmpop{animation:dmpop .6s ease-out}.dmshake{animation:dmshake .18s linear infinite}";
+    st.textContent = "@keyframes dmpop{0%{transform:scale(.5) rotateY(90deg);opacity:0}70%{transform:scale(1.12) rotateY(0);opacity:1}100%{transform:none}}@keyframes dmshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.dmpop{animation:dmpop .6s ease-out}.dmshake{animation:dmshake .18s linear infinite}@keyframes dmleafoff{0%{transform:rotate(0) translate(0,0);opacity:1}40%{transform:rotate(-14deg) translate(-4px,-6px);opacity:1}100%{transform:rotate(-70deg) translate(40px,-90px);opacity:0}}.dmleafoff{animation:dmleafoff .8s ease-in forwards;pointer-events:none}";
     document.head.appendChild(st);
   }
   function dmCard(ci, col, big) {
@@ -1168,15 +1178,16 @@
       row.style.cssText = "display:grid;grid-template-columns:1fr 38px 1fr;gap:6px;align-items:center;margin:6px 0;padding:4px;border-radius:14px;" + (k === DM.next ? "background:#fff3bf;" : "");
       var pa = DM_CH[DM.blue[k]].p, pb = DM_CH[DM.red[k]].p;
       var cellFor = function (sd, arr2, mine, theirs) {
-        var holder = el("div");
+        var holder = el("div"); holder.style.position = "relative";
+        var cd = dmCard(arr2[k], DM_COL[sd], false); holder.appendChild(cd);
         if (open) {
-          var cd = dmCard(arr2[k], DM_COL[sd], false); holder.appendChild(cd);
           if (mine > theirs) cd.style.background = sd === "blue" ? "#d0ebff" : "#ffe3e3"; else if (mine < theirs) cd.style.opacity = ".45";
-          if (k === DM.next - 1) cd.className = "dmpop";
-        } else {
-          var q = el("div", "", "❓"); q.style.cssText = "border:3px solid " + DM_COL[sd] + ";border-radius:14px;background:#f1f3f5;text-align:center;font-size:2rem;padding:20px 0";
-          if (k === DM.next && DM.wait) q.className = "dmshake";
-          holder.appendChild(q);
+        }
+        if (!open || k === DM.next - 1) {
+          var lf = el("div", open ? "dmleafoff" : (k === DM.next && DM.wait ? "dmshake" : ""));
+          lf.style.cssText = "position:absolute;left:0;top:0;right:0;bottom:0;border-radius:14px;border:3px solid " + DM_COL[sd] + ";background:" + (sd === "blue" ? "#d0ebff" : "#ffe3e3") + ";display:flex;align-items:center;justify-content:center;transform-origin:20% 90%";
+          lf.innerHTML = dmLeafSvg(++DM_UID);
+          holder.appendChild(lf);
         }
         return holder;
       };
@@ -1631,7 +1642,18 @@
 
   // ===== Nghe nhạc: yêu thích (con tuyển từ danh sách gợi ý), gợi ý (ba mẹ duyệt), yêu cầu bài (con điền) =====
   // Chỉ phát bằng khung nhúng YouTube (youtube-nocookie). Không lưu file nhạc. Con KHÔNG tự dán link; chỉ ba mẹ thêm/duyệt link.
-  var UKEY = "sc_music", MUSIC_PLAY = null;
+  var UKEY = "sc_music", MUSIC_PLAY = null, MUSIC_SUG_OPEN = false;
+  // Danh sách gợi ý thu gọn: bấm mới bung ra, khung trượt thấy khoảng 5–10 bài cùng lúc
+  function sugFold(box, title) {
+    var dt = document.createElement("details"); dt.className = "sugfold"; dt.open = MUSIC_SUG_OPEN;
+    dt.style.cssText = "background:#fff;border-radius:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:2px 12px";
+    var sm = document.createElement("summary"); sm.textContent = title; sm.style.cssText = "cursor:pointer;font-weight:800;padding:10px 0;font-size:1.05rem";
+    dt.appendChild(sm);
+    dt.addEventListener("toggle", function () { MUSIC_SUG_OPEN = dt.open; });
+    var sc = el("div"); sc.style.cssText = "max-height:min(65vh,560px);overflow-y:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch";
+    dt.appendChild(sc); box.appendChild(dt);
+    return sc;
+  }
   function loadU() { try { return JSON.parse(localStorage.getItem(UKEY)) || []; } catch (e) { return []; } }
   function saveU(a) { try { localStorage.setItem(UKEY, JSON.stringify(a)); } catch (e) {} }
   function musicId(vid) {
@@ -1704,8 +1726,8 @@
         r.appendChild(musicBtn("✖ Chưa được", "bad", function () { q.status = "no"; uPut(q); renderMusic(); }));
         box.appendChild(r);
       });
-      box.appendChild(el("div", "subhead", "✨ Danh sách gợi ý hiện có (" + sug.length + ")"));
-      sug.forEach(function (it) { musicRow(box, it, [play(it), musicBtn("Xóa", "bad", function () { it.del = true; uPut(it); renderMusic(); })]); });
+      var sbox = sugFold(box, "✨ Danh sách gợi ý hiện có (" + sug.length + ") — bấm để mở");
+      sug.forEach(function (it) { musicRow(sbox, it, [play(it), musicBtn("Xóa", "bad", function () { it.del = true; uPut(it); renderMusic(); })]); });
       var favs = all.filter(function (x) { return x.kind === "fav"; });
       if (favs.length) {
         box.appendChild(el("div", "subhead", "❤ Các con đang thích"));
@@ -1722,14 +1744,14 @@
     box.appendChild(el("div", "subhead", "❤ Nhạc yêu thích của " + who + " (" + favs2.length + ")"));
     if (!favs2.length) box.appendChild(el("p", "legend", "Chưa có bài nào. Bấm ♥ ở bài gợi ý bên dưới để thêm vào đây."));
     favs2.forEach(function (it) { musicRow(box, it, [play(it)].concat(canEdit() ? [musicBtn("Bỏ ♥", "alt", function () { it.del = true; uPut(it); renderMusic(); })] : [])); });
-    box.appendChild(el("div", "subhead", "✨ Ba mẹ gợi ý (" + sug.length + ")"));
-    if (!sug.length) box.appendChild(el("p", "legend", "Ba mẹ chưa thêm bài nào."));
+    var sbox2 = sugFold(box, "✨ Ba mẹ gợi ý (" + sug.length + " bài) — bấm để mở");
+    if (!sug.length) sbox2.appendChild(el("p", "legend", "Ba mẹ chưa thêm bài nào."));
     sug.forEach(function (it) {
       var fid = "f_" + who + "_" + it.vid, have = favs2.some(function (f) { return f.vid === it.vid; });
       var bs = [play(it)];
       if (own && !have) bs.push(musicBtn("♥ Thêm vào yêu thích", "alt", function () { uPut({ id: fid, kind: "fav", who: who, title: it.title, vid: it.vid, ts: Date.now(), del: false }); renderMusic(); }));
       else if (have) bs.push(el("small", "", "❤ đã thích"));
-      musicRow(box, it, bs);
+      musicRow(sbox2, it, bs);
     });
     box.appendChild(el("div", "subhead", "🙋 Xin bài nhạc mới"));
     var reqs = all.filter(function (x) { return x.kind === "req" && x.who === who; }).sort(function (a, b) { return b.ts - a.ts; });
