@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <title>Sân chơi gia đình</title>
 <style>
   :root { --ink:#2b2b3a; --bg:#fff8ee; }
@@ -2067,6 +2068,25 @@
   var SYNC = { msg: "", timer: null, busy: false };
   function sget(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
+  // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
+  var APP_VER = "202611151435";
+  function checkUpdate() {
+    if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
+    fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(new RegExp("APP_" + "VER = \"([^\"]+)\""));
+      if (!m || m[1] === APP_VER || document.getElementById("updBar")) return;
+      var bar = document.createElement("div"); bar.id = "updBar";
+      bar.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:9999;background:#1971c2;color:#fff;padding:12px;text-align:center;font-weight:700;cursor:pointer";
+      bar.textContent = "🔄 Có bản mới của trang — bấm vào đây để cập nhật (điểm của con vẫn giữ nguyên)";
+      bar.onclick = function () { location.href = location.pathname + "?v=" + m[1]; };
+      document.body.appendChild(bar);
+    }).catch(function () {});
+  }
+  setTimeout(checkUpdate, 3000);
+  setInterval(function () { if (!document.hidden) checkUpdate(); }, 300000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(checkUpdate, 1500); });
+
   // Địa chỉ Apps Script dựng sẵn → các máy tự kết nối, không phải nhập gì. (Có thể ghi đè bằng localStorage sc_url.)
   var DEFAULT_URL = "https://script.google.com/macros/s/AKfycbz3WFJx-426LC7wvtSugYw3XikqHOtdzCMuWQWU_q-NF9BTTH_r7JK8vH3vq595n7dkJg/exec";
   function syncUrl() { return sget("sc_url") || DEFAULT_URL; }
