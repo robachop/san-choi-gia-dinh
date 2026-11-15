@@ -1882,8 +1882,9 @@
     dt.appendChild(sc); box.appendChild(dt);
     return sc;
   }
-  function loadU() { try { return JSON.parse(localStorage.getItem(UKEY)) || []; } catch (e) { return []; } }
-  function saveU(a) { try { localStorage.setItem(UKEY, JSON.stringify(a)); } catch (e) {} }
+  var SAVE_ERR = "", APPLY_ERR = "";
+  function loadU() { try { var a = JSON.parse(localStorage.getItem(UKEY)); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function saveU(a) { try { localStorage.setItem(UKEY, JSON.stringify(a)); } catch (e) { SAVE_ERR = "không lưu được nhạc: " + String((e && e.message) || e); } }
   function musicId(vid) {
     var m = String(vid || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|music\.youtube\.com\/watch\?(?:.*&)?v=)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/);
     if (m) return m[1];
@@ -2070,7 +2071,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611151435";
+  var APP_VER = "202611151449";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
@@ -2170,12 +2171,18 @@
           if (mine[r.k]) return;
           var m = meta[r.k];
           if ((!m || r.u > m.u) && (!m || r.v !== m.j)) {
-            try { syncApply(r.k, r.v); meta[r.k] = { u: r.u, j: r.v }; changed++; } catch (e) {}
+            try { syncApply(r.k, r.v); meta[r.k] = { u: r.u, j: r.v }; changed++; } catch (e) { APPLY_ERR = r.k.charAt(0) + ": " + String((e && e.message) || e); }
           }
+        });
+        // Tự chữa: bài nhạc có trên Sheet mà máy này chưa có (dù sổ ghi nhớ nói đã nhận) thì nạp lại — chỉ THÊM bài còn thiếu, không đè gì.
+        var haveU = {}; loadU().forEach(function (x) { haveU[x.id] = 1; });
+        d.records.forEach(function (r) {
+          if (r.k.indexOf("u|") !== 0 || mine[r.k] || haveU[r.k.slice(2)]) return;
+          try { syncApply(r.k, r.v); meta[r.k] = { u: r.u, j: r.v }; changed++; } catch (e) { APPLY_ERR = "u: " + String((e && e.message) || e); }
         });
         sset("sc_meta", JSON.stringify(meta));
         var n = new Date();
-        SYNC.msg = "Đã đồng bộ lúc " + pad(n.getHours()) + ":" + pad(n.getMinutes()) + (changed ? " · nhận " + changed + " cập nhật" : "");
+        SYNC.msg = "Đã đồng bộ lúc " + pad(n.getHours()) + ":" + pad(n.getMinutes()) + (changed ? " · nhận " + changed + " cập nhật" : "") + " · nhạc trên máy: " + loadU().filter(function (x) { return x.kind === "sug" && !x.del; }).length + " gợi ý" + (SAVE_ERR || APPLY_ERR ? " · ⚠ " + (SAVE_ERR || APPLY_ERR) : "");
         if (changed) syncRefresh();
       })
       .catch(function () { SYNC.msg = "Chưa kết nối được mạng/máy chủ"; })
