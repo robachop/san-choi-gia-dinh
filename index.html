@@ -1901,10 +1901,12 @@
     var fr = document.createElement("iframe");
     fr.src = "https://www.youtube-nocookie.com/embed/" + MUSIC_PLAY.vid + "?rel=0&modestbranding=1&playsinline=1&autoplay=1";
     fr.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture"); fr.setAttribute("allowfullscreen", "");
+    fr.setAttribute("referrerpolicy", "strict-origin-when-cross-origin"); // YouTube báo "Lỗi 153" nếu khung nhúng không gửi được trang gốc
     fr.style.cssText = "width:100%;aspect-ratio:16/9;border:0;display:block"; fr.title = MUSIC_PLAY.title;
     w.appendChild(fr); box.appendChild(w);
     var t = el("p", "", "🎧 Đang nghe: " + MUSIC_PLAY.title); t.style.fontWeight = "700"; box.appendChild(t);
     var st = el("button", "send alt", "⏹ Tắt nhạc"); st.onclick = function () { MUSIC_PLAY = null; renderMusic(); }; box.appendChild(st);
+    var yl = el("a", "send alt", "↗ Không phát được? Mở bài này trên YouTube"); yl.href = "https://www.youtube.com/watch?v=" + MUSIC_PLAY.vid; yl.target = "_blank"; yl.rel = "noopener"; yl.style.cssText = "display:inline-block;margin-left:6px;text-decoration:none"; box.appendChild(yl);
   }
   // Sao cho bài nhạc: mỗi người (bé hoặc ba mẹ) chấm riêng, khóa "u<mã video>"; tự cập nhật tại chỗ, không tải lại trình phát
   function musicStars(vid, who, editable) {
