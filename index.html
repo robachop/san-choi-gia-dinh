@@ -767,8 +767,8 @@
     { t: "Trò chơi Tôi là ai?", d: "Đoán xem nhân vật là ai qua các gợi ý. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
     { t: "Dế Mèn phiêu lưu ký: Xếp trận", dm: true, d: "Hai đội Xanh và Đỏ, mỗi đội có 5 nhân vật. Mỗi đội bí mật xếp 5 nhân vật vào 5 ô thi đấu rồi úp lại. Khi mở, ô nào nhân vật mạnh hơn thì thắng ô đó. Đội thắng nhiều ô hơn thắng cả trận!" }
 ,
-    { t: "Vườn toán của Xoài", learn: "math", d: "Xoài luyện bảng nhân, chia hết từ 2 đến 9. Mỗi ván 10 câu, không tính giờ; trả lời sai có lời giải." },
-    { t: "English cùng Nho", learn: "english", d: "Nho luyện từ vựng quen thuộc và mẫu câu tiếng Anh cơ bản. Mỗi ván 10 câu, xem nghĩa và lời giải ngay sau khi chọn." }
+    { t: "Vườn toán của Xoài", learn: "math", d: "Xoài luyện Toán lớp 3 (nhân, chia số lớn, đơn vị đo, chu vi, biểu thức, bài toán có lời văn) và bảng nhân chia 2–9. Mỗi ván 10 câu, không tính giờ; trả lời sai có lời giải." },
+    { t: "English cùng Nho", learn: "english", d: "Nho luyện từ vựng và mẫu câu Tiếng Anh 6 theo từng Unit 1–6. Mỗi ván 10 câu, xem nghĩa và lời giải ngay sau khi chọn." }
   ];
   var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
   // SỔ CÁI ĐIỂM: mỗi lần được điểm / bón cây là một dòng riêng, các máy chỉ cộng dồn (không máy nào ghi đè điểm của máy khác).
@@ -1368,32 +1368,80 @@
 
   // Hai trò học tập dùng chung khung câu hỏi; ván riêng cho từng người, không ghi dữ liệu thử lên Sheet.
   var LEARN = {};
+  // Nội dung TẠM theo sách giáo khoa: Tiếng Anh 6 (chủ đề Unit 1–6: trường mới, nhà, bạn bè, khu phố, kỳ quan, Tết) và Toán 3 (nhân/chia số lớn, đơn vị đo, chu vi, biểu thức, toán lời văn). Tim sẽ cập nhật lại khi cần.
+  // Từ vựng: [unit, tiếng Anh, nghĩa]
   var EN_WORDS = [
-    ["apple", "quả táo"], ["banana", "quả chuối"], ["orange", "quả cam"], ["water", "nước"],
-    ["bread", "bánh mì"], ["milk", "sữa"], ["school", "trường học"], ["teacher", "giáo viên"],
-    ["student", "học sinh"], ["book", "quyển sách"], ["pencil", "bút chì"], ["library", "thư viện"],
-    ["mother", "mẹ"], ["father", "ba"], ["sister", "chị hoặc em gái"], ["brother", "anh hoặc em trai"],
-    ["happy", "vui vẻ"], ["tired", "mệt"], ["hungry", "đói"], ["thirsty", "khát"],
-    ["kitchen", "nhà bếp"], ["garden", "khu vườn"], ["bicycle", "xe đạp"], ["homework", "bài tập về nhà"]
+    [1, "school bag", "cặp sách"], [1, "notebook", "quyển vở"], [1, "ruler", "cái thước"], [1, "pencil case", "hộp bút"], [1, "compass", "com-pa"], [1, "calculator", "máy tính bỏ túi"], [1, "uniform", "đồng phục"], [1, "classmate", "bạn cùng lớp"], [1, "playground", "sân chơi"], [1, "lesson", "bài học"],
+    [2, "living room", "phòng khách"], [2, "bedroom", "phòng ngủ"], [2, "bathroom", "phòng tắm"], [2, "kitchen", "nhà bếp"], [2, "fridge", "tủ lạnh"], [2, "sofa", "ghế sô-pha"], [2, "cooker", "bếp nấu"], [2, "apartment", "căn hộ"], [2, "town house", "nhà phố"], [2, "country house", "nhà ở nông thôn"],
+    [3, "tall", "cao"], [3, "short", "thấp"], [3, "funny", "hài hước"], [3, "kind", "tốt bụng"], [3, "clever", "thông minh"], [3, "creative", "sáng tạo"], [3, "active", "năng động"], [3, "shy", "nhút nhát"], [3, "curly hair", "tóc xoăn"], [3, "friendly", "thân thiện"],
+    [4, "street", "con đường"], [4, "market", "chợ"], [4, "museum", "viện bảo tàng"], [4, "cinema", "rạp chiếu phim"], [4, "hospital", "bệnh viện"], [4, "temple", "ngôi đền"], [4, "quiet", "yên tĩnh"], [4, "noisy", "ồn ào"], [4, "crowded", "đông đúc"], [4, "narrow", "hẹp"],
+    [5, "cave", "hang động"], [5, "mountain", "ngọn núi"], [5, "waterfall", "thác nước"], [5, "beach", "bãi biển"], [5, "island", "hòn đảo"], [5, "bay", "vịnh"], [5, "river", "dòng sông"], [5, "forest", "khu rừng"], [5, "desert", "sa mạc"], [5, "lake", "hồ nước"],
+    [6, "Tet", "Tết"], [6, "lucky money", "tiền lì xì"], [6, "fireworks", "pháo hoa"], [6, "peach blossom", "hoa đào"], [6, "rice cake", "bánh chưng"], [6, "decorate", "trang trí"], [6, "relatives", "họ hàng"], [6, "wish", "lời chúc"], [6, "visit", "thăm"], [6, "clean", "dọn dẹp"]
   ];
+  // Mẫu câu: [unit, câu, [đáp án đúng, sai, sai, sai], giải thích]
   var EN_SENTENCES = [
-    ["She ___ my sister.", ["is", "am", "are", "be"], "She đi với is: Cô ấy là chị/em gái của mình."],
-    ["I ___ a student.", ["am", "is", "are", "be"], "I đi với am: Mình là học sinh."],
-    ["They ___ happy.", ["are", "is", "am", "be"], "They đi với are: Họ vui vẻ."],
-    ["He ___ football every Sunday.", ["plays", "play", "playing", "to play"], "Hiện tại đơn: He đi với plays. Bạn ấy chơi bóng đá mỗi Chủ nhật."],
-    ["I have ___ apple.", ["an", "a", "am", "is"], "Dùng an trước âm nguyên âm đầu của apple: Mình có một quả táo."],
-    ["There ___ two books on the desk.", ["are", "is", "am", "be"], "Two books là số nhiều nên dùng are: Có hai quyển sách trên bàn."],
-    ["We ___ English on Monday.", ["study", "studies", "studying", "to study"], "Hiện tại đơn: We đi với study. Chúng mình học tiếng Anh vào thứ Hai."],
-    ["___ do you live? — In Hanoi.", ["Where", "Who", "When", "What"], "Where hỏi nơi chốn: Bạn sống ở đâu? — Ở Hà Nội."]
+    [1, "My brother ___ to school by bike every day.", ["goes", "go", "going", "is go"], "Hiện tại đơn, chủ ngữ số ít (he/my brother) thêm -es: goes."],
+    [1, "Look! The students ___ in the playground.", ["are playing", "play", "plays", "played"], "Look! báo hành động đang diễn ra: hiện tại tiếp diễn are playing."],
+    [1, "She ___ her homework every evening.", ["does", "do", "doing", "is do"], "Thói quen hằng ngày, she đi với does."],
+    [1, "I ___ my teeth in the morning.", ["brush", "brushes", "brushing", "brushed"], "I đi với động từ nguyên mẫu: brush."],
+    [1, "We ___ English on Monday and Thursday.", ["have", "has", "having", "are have"], "We đi với have: Chúng mình có (học) tiếng Anh vào thứ Hai và thứ Năm."],
+    [2, "There ___ a sofa in the living room.", ["is", "are", "am", "be"], "A sofa là số ít nên dùng there is."],
+    [2, "There ___ two beds in the bedroom.", ["are", "is", "am", "be"], "Two beds là số nhiều nên dùng there are."],
+    [2, "The lamp is ___ the bed and the desk.", ["between", "on", "in", "at"], "between = ở giữa (hai vật)."],
+    [2, "My house ___ a small garden.", ["has", "have", "are", "is have"], "My house là số ít: has (có)."],
+    [2, "Is there a fridge in the kitchen? — Yes, there ___.", ["is", "are", "does", "has"], "Trả lời ngắn: Yes, there is."],
+    [3, "My friend Lan is tall. She ___ long black hair.", ["has", "have", "is", "are"], "Miêu tả: she has (cô ấy có) tóc dài đen."],
+    [3, "Nam ___ a funny boy.", ["is", "are", "am", "be"], "Nam = he, đi với is."],
+    [3, "My friends ___ playing football now.", ["are", "is", "am", "do"], "now → hiện tại tiếp diễn; my friends số nhiều nên are playing."],
+    [3, "He ___ like fish.", ["doesn't", "don't", "isn't", "not"], "He đi với doesn't ở câu phủ định hiện tại đơn."],
+    [3, "What ___ your best friend like? — She is kind and clever.", ["is", "does", "are", "do"], "Hỏi tính cách: What is she like?"],
+    [4, "This street is ___ than that one.", ["narrower", "narrow", "more narrow", "narrowest"], "Tính từ ngắn: thêm -er để so sánh hơn: narrower."],
+    [4, "The market is ___ the cinema.", ["next to", "between", "at", "of"], "next to = bên cạnh."],
+    [4, "Is there ___ museum near here?", ["a", "an", "some", "two"], "Museum là danh từ số ít, bắt đầu bằng phụ âm: a museum."],
+    [4, "___ is the post office? — It's opposite the bank.", ["Where", "Who", "When", "What"], "Where hỏi nơi chốn."],
+    [4, "My neighbourhood is ___ than the city centre.", ["quieter", "quiet", "more quiet", "quietest"], "quiet → quieter (yên tĩnh hơn)."],
+    [5, "Ha Long Bay is ___ beautiful place in Viet Nam.", ["a", "an", "two", "some"], "Beautiful bắt đầu bằng phụ âm b: a beautiful place."],
+    [5, "Fansipan is the ___ mountain in Viet Nam.", ["highest", "higher", "high", "more high"], "So sánh nhất: the highest (cao nhất)."],
+    [5, "We can ___ in the sea.", ["swim", "swims", "swimming", "to swim"], "Sau can dùng động từ nguyên mẫu: swim."],
+    [5, "How ___ is the Mekong River?", ["long", "many", "much", "old"], "Hỏi độ dài: How long?"],
+    [5, "What ___ you do at the beach? — I build sandcastles.", ["do", "does", "are", "is"], "You đi với do."],
+    [6, "We ___ visit our grandparents at Tet.", ["often", "oftens", "is", "are"], "often là trạng từ tần suất, đứng trước động từ visit."],
+    [6, "You ___ clean the house before Tet.", ["should", "shouldn't", "are", "does"], "should = nên: Bạn nên dọn nhà trước Tết."],
+    [6, "Children ___ break things at Tet.", ["shouldn't", "should", "are", "do"], "shouldn't = không nên: Trẻ em không nên làm vỡ đồ ngày Tết."],
+    [6, "We ___ fireworks on New Year's Eve.", ["watch", "watches", "watching", "is watch"], "We đi với động từ nguyên mẫu: watch."],
+    [6, "I'd like ___ rice cakes, please.", ["some", "a", "an", "one"], "Rice cakes là số nhiều nên dùng some."]
   ];
   function learnShuffle(a) {
     a = a.slice();
     for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
+  function learnRnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function learnNum(q, answer, explain) {
+    var n = answer, c = learnShuffle([n + 1, n - 1, n + 10, n - 10, n + 2, n - 2, n + 100, n * 2].filter(function (v) { return v > 0 && v !== n; }));
+    var opts = [n]; c.forEach(function (v) { if (opts.length < 4 && opts.indexOf(v) < 0) opts.push(v); });
+    return { q: q, answer: String(n), options: learnShuffle(opts.map(String)), explain: explain };
+  }
+  // Toán lớp 3 (tạm): mỗi ván trộn 10 câu từ nhiều dạng
+  function mathGrade3() {
+    var pool = [], i, a, b, c, u;
+    for (i = 0; i < 3; i++) { a = learnRnd(12, 199); b = learnRnd(2, 9); pool.push(learnNum(a + " × " + b + " = ?", a * b, a + " × " + b + " = " + (a * b))); }
+    for (i = 0; i < 3; i++) { b = learnRnd(2, 9); a = learnRnd(11, 150); pool.push(learnNum((a * b) + " ÷ " + b + " = ?", a, (a * b) + " ÷ " + b + " = " + a + ", vì " + a + " × " + b + " = " + (a * b))); }
+    u = [["m", "cm", 100], ["km", "m", 1000], ["kg", "g", 1000], ["dm", "cm", 10], ["cm", "mm", 10]];
+    for (i = 0; i < 2; i++) { var t = u[learnRnd(0, u.length - 1)]; a = learnRnd(2, 9); pool.push(learnNum(a + " " + t[0] + " = ? " + t[1], a * t[2], "1 " + t[0] + " = " + t[2] + " " + t[1] + ", nên " + a + " " + t[0] + " = " + (a * t[2]) + " " + t[1])); }
+    a = learnRnd(3, 20); pool.push(learnNum("Hình vuông có cạnh " + a + " cm. Chu vi là ? cm", a * 4, "Chu vi hình vuông = cạnh × 4 = " + a + " × 4 = " + (a * 4)));
+    a = learnRnd(6, 20); b = learnRnd(2, a - 1); pool.push(learnNum("Hình chữ nhật dài " + a + " cm, rộng " + b + " cm. Chu vi là ? cm", (a + b) * 2, "Chu vi = (dài + rộng) × 2 = (" + a + " + " + b + ") × 2 = " + ((a + b) * 2)));
+    a = learnRnd(10, 50); b = learnRnd(2, 9); c = learnRnd(2, 9); pool.push(learnNum(a + " + " + b + " × " + c + " = ?", a + b * c, "Nhân trước, cộng sau: " + b + " × " + c + " = " + (b * c) + "; " + a + " + " + (b * c) + " = " + (a + b * c)));
+    a = learnRnd(2, 9); b = learnRnd(2, 9); c = learnRnd(2, 9); pool.push(learnNum("(" + a + " + " + b + ") × " + c + " = ?", (a + b) * c, "Làm trong ngoặc trước: " + a + " + " + b + " = " + (a + b) + "; " + (a + b) + " × " + c + " = " + ((a + b) * c)));
+    a = learnRnd(5, 9); b = learnRnd(3, 9); pool.push(learnNum("Mỗi hộp có " + a + " cái bút. " + b + " hộp như vậy có ? cái bút", a * b, a + " × " + b + " = " + (a * b)));
+    b = learnRnd(3, 9); a = learnRnd(4, 12); pool.push(learnNum((a * b) + " quả cam chia đều cho " + b + " bạn. Mỗi bạn được ? quả", a, (a * b) + " ÷ " + b + " = " + a));
+    a = learnRnd(3, 9); b = learnRnd(3, 9); pool.push(learnNum("Gấp " + a + " lên " + b + " lần được ?", a * b, "Gấp lên " + b + " lần: " + a + " × " + b + " = " + (a * b)));
+    return learnShuffle(pool).slice(0, 10);
+  }
   function learnQuestions(type, mode) {
     var a = [];
     if (type === "math") {
+      if (mode === "g3") return mathGrade3();
       for (var x = 2; x <= 9; x++) for (var y = 1; y <= 10; y++) {
         if (mode !== "div") a.push({ q: x + " × " + y + " = ?", answer: String(x * y), explain: x + " × " + y + " = " + (x * y) });
         if (mode !== "mul") a.push({ q: (x * y) + " ÷ " + x + " = ?", answer: String(y), explain: (x * y) + " ÷ " + x + " = " + y + ", vì " + x + " × " + y + " = " + (x * y) });
@@ -1404,13 +1452,15 @@
         q.options = learnShuffle(opts.map(String)); return q;
       });
     }
-    EN_WORDS.forEach(function (w) {
-      var reverse = Math.random() < 0.5, ix = reverse ? 0 : 1;
-      var wrong = learnShuffle(EN_WORDS.filter(function (v) { return v !== w; })).slice(0, 3).map(function (v) { return v[ix]; });
-      a.push({ q: reverse ? 'Từ tiếng Anh của “' + w[1] + '” là gì?' : '“' + w[0] + '” nghĩa là gì?', answer: w[ix], options: learnShuffle([w[ix]].concat(wrong)), explain: w[0] + " = " + w[1] });
+    var units = mode === "e1" ? [1, 2] : mode === "e2" ? [3, 4] : mode === "e3" ? [5, 6] : [1, 2, 3, 4, 5, 6];
+    var words = EN_WORDS.filter(function (w) { return units.indexOf(w[0]) >= 0; });
+    words.forEach(function (w) {
+      var reverse = Math.random() < 0.5, ix = reverse ? 1 : 2;
+      var wrong = learnShuffle(words.filter(function (v) { return v !== w; })).slice(0, 3).map(function (v) { return v[ix]; });
+      a.push({ q: reverse ? 'Từ tiếng Anh của “' + w[2] + '” là gì?' : '“' + w[1] + '” nghĩa là gì?', answer: w[ix], options: learnShuffle([w[ix]].concat(wrong)), explain: w[1] + " = " + w[2] });
     });
-    var vocab = learnShuffle(a).slice(0, 6);
-    var grammar = learnShuffle(EN_SENTENCES).slice(0, 4).map(function (v) { return { q: v[0], answer: v[1][0], options: learnShuffle(v[1]), explain: v[2] }; });
+    var vocab = learnShuffle(a).slice(0, 5);
+    var grammar = learnShuffle(EN_SENTENCES.filter(function (v) { return units.indexOf(v[0]) >= 0; })).slice(0, 5).map(function (v) { return { q: v[1], answer: v[2][0], options: learnShuffle(v[2]), explain: v[3] }; });
     return learnShuffle(vocab.concat(grammar));
   }
   function learnRender(box, type) {
@@ -1420,8 +1470,8 @@
     function start(mode) { LEARN[key] = { qs: learnQuestions(type, mode), i: 0, score: 0, picked: null, wrong: [], mode: mode }; draw(); }
     if (!st) {
       box.appendChild(el("p", "", "Chọn đáp án đúng. Mỗi câu chỉ tính lần chọn đầu, không cần vội!"));
-      if (type === "math") { button("✖ Luyện nhân", function () { start("mul"); }); button("➗ Luyện chia", function () { start("div"); }); button("🌟 Nhân và chia", function () { start("mix"); }); }
-      else button("🌍 Bắt đầu 10 câu", function () { start("english"); });
+      if (type === "math") { button("📘 Toán lớp 3 (trộn nhiều dạng)", function () { start("g3"); }); button("✖ Luyện nhân", function () { start("mul"); }); button("➗ Luyện chia", function () { start("div"); }); button("🌟 Nhân và chia", function () { start("mix"); }); }
+      else { button("🏫 Unit 1–2: Trường mới · Ngôi nhà", function () { start("e1"); }); button("👫 Unit 3–4: Bạn bè · Khu phố", function () { start("e2"); }); button("🏞️ Unit 5–6: Kỳ quan · Tết", function () { start("e3"); }); button("🌍 Tổng hợp Unit 1–6", function () { start("emix"); }); }
       return;
     }
     if (st.i >= st.qs.length) {
@@ -2170,7 +2220,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611161117";
+  var APP_VER = "202611161152";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
