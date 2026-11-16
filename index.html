@@ -303,13 +303,13 @@
   var KIDS = [
     { name: "Tín", color: "#e8590c", icon: "🍉", lop: "9B2", born: 2012, start: "7:00", end: "11:15",
       // Việc nhà được giao (ngày và giờ là GIẢ ĐỊNH; ngày: 0=T2 ... 5=T7, 6=CN) — sửa tại đây
-      chores: [["17:30", "18:00", "Giặt quần áo", [0, 2, 4]], ["10:00", "10:30", "Rửa nhà vệ sinh", [5]], ["10:30", "11:00", "Rửa nhà tắm", [5]], ["16:00", "16:30", "Đốt rác", [6]], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
+      chores: [["11:30", "12:00", "Giặt quần áo (trưa)"], ["17:30", "18:00", "Giặt quần áo (tối)"], ["10:00", "10:30", "Rửa nhà vệ sinh", [5]], ["10:30", "11:00", "Rửa nhà tắm", [5]], ["16:00", "16:30", "Đốt rác", [6]], ["13:00", "13:30", "Tập đàn (trưa)"], ["19:30", "20:15", "Tập đàn (tối)"], ["20:30", "21:00", "Xếp quần áo"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
     { name: "Nho", color: "#7048e8", icon: "🍇", lop: "6B2", born: 2015, start: "7:00", end: "11:15",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
-      chores: [["17:30", "17:45", "Cho chó ăn"], ["19:30", "19:50", "Rửa chén"], ["19:50", "20:00", "Úp chén"], ["20:00", "20:20", "Dọn bếp"], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
+      chores: [["17:30", "17:45", "Cho chó ăn"], ["12:00", "12:20", "Rửa chén (trưa)"], ["12:20", "12:30", "Úp chén (trưa)"], ["12:30", "12:50", "Dọn bàn bếp (trưa)"], ["19:30", "19:50", "Rửa chén (tối)"], ["19:50", "20:00", "Úp chén (tối)"], ["20:00", "20:20", "Dọn bàn bếp (tối)"], ["13:00", "13:30", "Tập đàn (trưa)"], ["17:45", "18:30", "Tập đàn (tối)"], ["20:30", "21:00", "Xếp quần áo"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
     { name: "Xoài", color: "#f59f00", icon: "🥭", lop: "3B2", born: 2018, start: "7:00", end: "10:30",
       // Việc nhà được giao (giờ là GIẢ ĐỊNH, làm mỗi ngày) — sửa tại đây
-      chores: [["17:30", "17:45", "Quét phòng khách"], ["17:45", "18:00", "Quét phòng ngủ"], ["18:00", "18:15", "Quét nhà giữa"], ["19:30", "19:45", "Dọn bàn ăn"], ["20:30", "21:00", "Xếp quần áo"], ["18:30", "19:00", "Tập đàn"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
+      chores: [["11:30", "11:45", "Quét phòng khách (trưa)"], ["11:45", "12:00", "Quét phòng ngủ (trưa)"], ["12:00", "12:15", "Quét nhà giữa (trưa)"], ["12:15", "12:30", "Dọn bàn ăn (trưa)"], ["17:30", "17:45", "Quét phòng khách (tối)"], ["17:45", "18:00", "Quét phòng ngủ (tối)"], ["18:00", "18:15", "Quét nhà giữa (tối)"], ["19:30", "19:45", "Dọn bàn ăn (tối)"], ["13:00", "13:30", "Tập đàn (trưa)"], ["19:45", "20:30", "Tập đàn (tối)"], ["20:30", "21:00", "Xếp quần áo"], ["21:00", "21:15", "Đọc Kinh Thánh"]] },
     { name: "Ba", color: "#495057", icon: "🧔", parent: true, start: "7:00", back: "18:00", satBack: "14:00" },
     { name: "Mẹ", color: "#c2255c", icon: "👩", parent: true, start: "8:00", back: "17:00" }
   ];
@@ -766,6 +766,9 @@
     { t: "Trò chơi ô chữ", d: "Giải ô chữ để học thêm về Kinh Thánh. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
     { t: "Trò chơi Tôi là ai?", d: "Đoán xem nhân vật là ai qua các gợi ý. Bấm nút bên dưới để mở trò chơi, chơi xong nhớ quay lại nhận điểm nhé." },
     { t: "Dế Mèn phiêu lưu ký: Xếp trận", dm: true, d: "Hai đội Xanh và Đỏ, mỗi đội có 5 nhân vật. Mỗi đội bí mật xếp 5 nhân vật vào 5 ô thi đấu rồi úp lại. Khi mở, ô nào nhân vật mạnh hơn thì thắng ô đó. Đội thắng nhiều ô hơn thắng cả trận!" }
+,
+    { t: "Vườn toán của Xoài", learn: "math", d: "Xoài luyện bảng nhân, chia hết từ 2 đến 9. Mỗi ván 10 câu, không tính giờ; trả lời sai có lời giải." },
+    { t: "English cùng Nho", learn: "english", d: "Nho luyện từ vựng quen thuộc và mẫu câu tiếng Anh cơ bản. Mỗi ván 10 câu, xem nghĩa và lời giải ngay sau khi chọn." }
   ];
   var STAGES = [[0, "🌱", "Mầm nho mới nhú"], [1, "🌿", "Nhánh non"], [3, "🍃", "Nhánh có lá, bắt đầu ra trái"], [6, "🍇", "Nhánh sai trái"], [10, "🍇", "Nhánh nho chín rộ!"]];
   // SỔ CÁI ĐIỂM: mỗi lần được điểm / bón cây là một dòng riêng, các máy chỉ cộng dồn (không máy nào ghi đè điểm của máy khác).
@@ -1092,7 +1095,7 @@
     var p = homeOpen();
     p.appendChild(el("b", "", "❓ Chọn trò chơi"));
     GAMES.forEach(function (g, gi) {
-      if (g.dm) { p.appendChild(el("p", "legend", g.t + ": chơi trong góc của từng bé")); return; }
+      if (g.dm || g.learn) { p.appendChild(el("p", "legend", g.t + ": chơi trong góc của từng bé")); return; }
       var a = el("a", "send", g.t); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a);
       var av = avgOf("g" + gi);
       p.appendChild(el("p", "legend", g.t + ": " + (av ? av.avg.toFixed(1) + "★ (" + av.n + " bé)" : "chưa có đánh giá")));
@@ -1363,6 +1366,90 @@
     }
   }
 
+  // Hai trò học tập dùng chung khung câu hỏi; ván riêng cho từng người, không ghi dữ liệu thử lên Sheet.
+  var LEARN = {};
+  var EN_WORDS = [
+    ["apple", "quả táo"], ["banana", "quả chuối"], ["orange", "quả cam"], ["water", "nước"],
+    ["bread", "bánh mì"], ["milk", "sữa"], ["school", "trường học"], ["teacher", "giáo viên"],
+    ["student", "học sinh"], ["book", "quyển sách"], ["pencil", "bút chì"], ["library", "thư viện"],
+    ["mother", "mẹ"], ["father", "ba"], ["sister", "chị hoặc em gái"], ["brother", "anh hoặc em trai"],
+    ["happy", "vui vẻ"], ["tired", "mệt"], ["hungry", "đói"], ["thirsty", "khát"],
+    ["kitchen", "nhà bếp"], ["garden", "khu vườn"], ["bicycle", "xe đạp"], ["homework", "bài tập về nhà"]
+  ];
+  var EN_SENTENCES = [
+    ["She ___ my sister.", ["is", "am", "are", "be"], "She đi với is: Cô ấy là chị/em gái của mình."],
+    ["I ___ a student.", ["am", "is", "are", "be"], "I đi với am: Mình là học sinh."],
+    ["They ___ happy.", ["are", "is", "am", "be"], "They đi với are: Họ vui vẻ."],
+    ["He ___ football every Sunday.", ["plays", "play", "playing", "to play"], "Hiện tại đơn: He đi với plays. Bạn ấy chơi bóng đá mỗi Chủ nhật."],
+    ["I have ___ apple.", ["an", "a", "am", "is"], "Dùng an trước âm nguyên âm đầu của apple: Mình có một quả táo."],
+    ["There ___ two books on the desk.", ["are", "is", "am", "be"], "Two books là số nhiều nên dùng are: Có hai quyển sách trên bàn."],
+    ["We ___ English on Monday.", ["study", "studies", "studying", "to study"], "Hiện tại đơn: We đi với study. Chúng mình học tiếng Anh vào thứ Hai."],
+    ["___ do you live? — In Hanoi.", ["Where", "Who", "When", "What"], "Where hỏi nơi chốn: Bạn sống ở đâu? — Ở Hà Nội."]
+  ];
+  function learnShuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function learnQuestions(type, mode) {
+    var a = [];
+    if (type === "math") {
+      for (var x = 2; x <= 9; x++) for (var y = 1; y <= 10; y++) {
+        if (mode !== "div") a.push({ q: x + " × " + y + " = ?", answer: String(x * y), explain: x + " × " + y + " = " + (x * y) });
+        if (mode !== "mul") a.push({ q: (x * y) + " ÷ " + x + " = ?", answer: String(y), explain: (x * y) + " ÷ " + x + " = " + y + ", vì " + x + " × " + y + " = " + (x * y) });
+      }
+      return learnShuffle(a).slice(0, 10).map(function (q) {
+        var n = +q.answer, opts = [n];
+        learnShuffle([n - 2, n - 1, n + 1, n + 2, n + 3].filter(function (v) { return v >= 0; })).slice(0, 3).forEach(function (v) { opts.push(v); });
+        q.options = learnShuffle(opts.map(String)); return q;
+      });
+    }
+    EN_WORDS.forEach(function (w) {
+      var reverse = Math.random() < 0.5, ix = reverse ? 0 : 1;
+      var wrong = learnShuffle(EN_WORDS.filter(function (v) { return v !== w; })).slice(0, 3).map(function (v) { return v[ix]; });
+      a.push({ q: reverse ? 'Từ tiếng Anh của “' + w[1] + '” là gì?' : '“' + w[0] + '” nghĩa là gì?', answer: w[ix], options: learnShuffle([w[ix]].concat(wrong)), explain: w[0] + " = " + w[1] });
+    });
+    var vocab = learnShuffle(a).slice(0, 6);
+    var grammar = learnShuffle(EN_SENTENCES).slice(0, 4).map(function (v) { return { q: v[0], answer: v[1][0], options: learnShuffle(v[1]), explain: v[2] }; });
+    return learnShuffle(vocab.concat(grammar));
+  }
+  function learnRender(box, type) {
+    var key = viewing.name + "|" + type, st = LEARN[key];
+    function button(label, fn) { var b = el("button", "send", label); b.type = "button"; b.onclick = fn; box.appendChild(b); return b; }
+    function draw() { box.innerHTML = ""; learnRender(box, type); }
+    function start(mode) { LEARN[key] = { qs: learnQuestions(type, mode), i: 0, score: 0, picked: null, wrong: [], mode: mode }; draw(); }
+    if (!st) {
+      box.appendChild(el("p", "", "Chọn đáp án đúng. Mỗi câu chỉ tính lần chọn đầu, không cần vội!"));
+      if (type === "math") { button("✖ Luyện nhân", function () { start("mul"); }); button("➗ Luyện chia", function () { start("div"); }); button("🌟 Nhân và chia", function () { start("mix"); }); }
+      else button("🌍 Bắt đầu 10 câu", function () { start("english"); });
+      return;
+    }
+    if (st.i >= st.qs.length) {
+      box.appendChild(el("h4", "", "🎉 Hoàn thành! Đúng " + st.score + " / " + st.qs.length + " câu"));
+      box.appendChild(el("p", "", st.score === st.qs.length ? "Tuyệt lắm! Con đã trả lời đúng tất cả." : "Con đã cố gắng rồi! Cùng xem lại các câu cần luyện nhé."));
+      st.wrong.forEach(function (q) { box.appendChild(el("p", "", q.q + " → " + q.explain)); });
+      button("🔁 Chơi ván mới", function () { start(st.mode); });
+      button("Đổi cách chơi", function () { delete LEARN[key]; draw(); }); return;
+    }
+    var q = st.qs[st.i];
+    box.appendChild(el("p", "", "Câu " + (st.i + 1) + " / " + st.qs.length + " · Đúng " + st.score));
+    var title = el("h4", "", q.q); title.style.fontSize = "1.5rem"; box.appendChild(title);
+    q.options.forEach(function (opt) {
+      var b = button(opt, function () {
+        if (st.picked !== null) return;
+        st.picked = opt; if (opt === q.answer) st.score++; else st.wrong.push(q); draw();
+      });
+      b.style.cssText = "display:block;width:100%;margin:10px 0;white-space:normal;min-height:48px";
+      b.disabled = st.picked !== null;
+      if (st.picked !== null && opt === q.answer) b.style.background = "#2b8a3e";
+    });
+    if (st.picked !== null) {
+      var feedback = el("p", "", (st.picked === q.answer ? "✅ Đúng rồi! " : "🌱 Đáp án đúng: " + q.answer + ". ") + q.explain);
+      feedback.setAttribute("role", "status"); box.appendChild(feedback);
+      button(st.i + 1 === st.qs.length ? "Xem kết quả" : "Câu tiếp →", function () { st.i++; st.picked = null; draw(); });
+    }
+  }
+
   // ----- Sách trò chơi: mỗi trang một trò, lật qua lại; điểm ngay dưới trang -----
   var GBOOK_I = 0;
   function renderGameBook(dir) {
@@ -1374,7 +1461,8 @@
     var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
     page.appendChild(el("h3", "", "🎮 " + g.t));
     page.appendChild(el("p", "", g.d));
-    if (g.dm) { var dh = el("div", "dmgame"); dmRender(dh); page.appendChild(dh); }
+    if (g.learn) { var lh = el("div", "learning-game"); learnRender(lh, g.learn); page.appendChild(lh); }
+    else if (g.dm) { var dh = el("div", "dmgame"); dmRender(dh); page.appendChild(dh); }
     else {
       var a = el("a", "send", "▶ Mở trò chơi"); a.href = APP_URL; a.target = "_blank"; a.rel = "noopener";
       a.style.cssText = "display:block;text-align:center;font-size:1.2rem;padding:16px;margin:16px 0 4px";
@@ -2082,7 +2170,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611151933";
+  var APP_VER = "202611161117";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
