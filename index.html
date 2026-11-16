@@ -1501,13 +1501,21 @@
   }
 
   // ----- Sách trò chơi: mỗi trang một trò, lật qua lại; điểm ngay dưới trang -----
-  var GBOOK_I = 0;
+  // Thứ tự trang: Toán + Tiếng Anh lên đầu; GBOOK_I vẫn là chỉ số trò gốc nên điểm/sao đã lưu không đổi
+  // Xoài: Vườn toán lên trang 1; Nho: English lên trang 1; người khác giữ thứ tự cũ
+  var GBOOK_I = 0, GBOOK_FOR = "";
+  function gOrder() {
+    var n = viewing && viewing.name;
+    return n === "Xoài" ? [4, 0, 1, 2, 3, 5] : n === "Nho" ? [5, 0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5];
+  }
+  function gPos(j) { return gOrder().indexOf(j); }
   function renderGameBook(dir) {
     var box = document.getElementById("gbook"), N = GAMES.length, i;
+    if (GBOOK_FOR !== viewing.name) { GBOOK_FOR = viewing.name; GBOOK_I = gOrder()[0]; }
     var own = viewing === me, o = loadP(), d = pOf(o, viewing.name), day = ds(new Date()), g = GAMES[GBOOK_I];
     box.innerHTML = "";
     var wrap = el("div", "bookwrap");
-    wrap.appendChild(el("div", "booktop", "🎮 Trò chơi " + (GBOOK_I + 1) + " / " + N));
+    wrap.appendChild(el("div", "booktop", "🎮 Trò chơi " + (gPos(GBOOK_I) + 1) + " / " + N));
     var page = el("div", "page" + (dir > 0 ? " next" : dir < 0 ? " prev" : ""));
     page.appendChild(el("h3", "", "🎮 " + g.t));
     page.appendChild(el("p", "", g.d));
@@ -1531,17 +1539,17 @@
     wrap.appendChild(reward);
     var nav = el("div", "booknav");
     var pv = el("button", "send alt", "◀ Trò trước"), nx = el("button", "send", "Trò tiếp ▶");
-    pv.onclick = function () { GBOOK_I = (GBOOK_I - 1 + N) % N; renderGameBook(-1); };
-    nx.onclick = function () { GBOOK_I = (GBOOK_I + 1) % N; renderGameBook(1); };
+    pv.onclick = function () { GBOOK_I = gOrder()[(gPos(GBOOK_I) - 1 + N) % N]; renderGameBook(-1); };
+    nx.onclick = function () { GBOOK_I = gOrder()[(gPos(GBOOK_I) + 1) % N]; renderGameBook(1); };
     nav.appendChild(pv); nav.appendChild(nx);
     wrap.appendChild(nav);
     var dots = el("div", "bookdots");
-    for (i = 0; i < N; i++) (function (j) {
-      var dt = el("button", "bdot" + (j === GBOOK_I ? " on" : "") + (d.done[day + "|g" + j] ? " read" : ""), String(j + 1));
-      dt.setAttribute("aria-label", "Trò chơi " + (j + 1) + ": " + GAMES[j].t);
-      dt.onclick = function () { var dr = j > GBOOK_I ? 1 : -1; GBOOK_I = j; renderGameBook(dr); };
+    for (i = 0; i < N; i++) (function (j, pos) {
+      var dt = el("button", "bdot" + (j === GBOOK_I ? " on" : "") + (d.done[day + "|g" + j] ? " read" : ""), String(pos + 1));
+      dt.setAttribute("aria-label", "Trò chơi " + (pos + 1) + ": " + GAMES[j].t);
+      dt.onclick = function () { var dr = pos > gPos(GBOOK_I) ? 1 : -1; GBOOK_I = j; renderGameBook(dr); };
       dots.appendChild(dt);
-    })(i);
+    })(gOrder()[i], i);
     wrap.appendChild(dots);
     box.appendChild(wrap);
   }
@@ -2220,7 +2228,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611161152";
+  var APP_VER = "202611161157";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
