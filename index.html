@@ -554,8 +554,22 @@
       TSTAT.forEach(function (s) {
         var op = el("option", "", s); op.value = s; if (s === cur) op.selected = true; sel.appendChild(op);
       });
-      sel.onchange = function () { var o = loadTodo(); o[key] = sel.value; saveTodo(o); renderTodo(); };
+      var piano = label.indexOf("Tập đàn") === 0, pkey = key + "|bài", pcur = st[pkey] || "", pin = null;
+      sel.onchange = function () {
+        var o = loadTodo();
+        if (piano && sel.value === "Xong" && !((pin && pin.value.trim()) || pcur)) { sel.value = cur; if (pin) { pin.placeholder = "⚠ Con ghi bài đã tập trước nhé"; pin.focus(); } return; }
+        o[key] = sel.value; saveTodo(o); renderTodo();
+      };
       it.appendChild(sel);
+      if (piano) {
+        // Con ghi lại bài tập đàn của ngày hôm đó (ba mẹ xem được); phải ghi mới bấm "Xong" được
+        pin = el("input", "fld"); pin.maxLength = 80; pin.value = pcur; pin.disabled = !canEdit();
+        pin.placeholder = "🎹 Hôm nay con tập bài gì?";
+        pin.setAttribute("aria-label", "Bài tập đàn: " + label);
+        pin.style.cssText = "display:block;width:100%;margin-top:8px;box-sizing:border-box";
+        pin.onchange = function () { var o = loadTodo(), v = pin.value.trim(); o[pkey] = v; saveTodo(o); pcur = v; };
+        it.appendChild(pin);
+      }
       if (c && canEdit()) {
         var x = el("button", "xdel", "✕"); x.title = "Xóa việc này"; x.setAttribute("aria-label", "Xóa việc " + label);
         x.onclick = function () { var a = loadM(); a.forEach(function (m) { if (m.id === c.id) m.del = true; }); saveM(a); renderTodo(); };
@@ -917,9 +931,17 @@
 
   // ----- Cây nho: 1 gốc chung, 3 nhánh (mỗi bé một nhánh), lớn lên theo số lần bón -----
   var VINE_N = 0;
+  // Số liệu cố gắng của từng bé (đã kiếm tổng cộng, số truyện đã đọc) để đánh dấu trên cây
+  function effortOf(name) {
+    var L = loadL(), pre = name + "|", pts = 0, reads = 0;
+    Object.keys(L.e).forEach(function (k) { if (k.indexOf(pre) !== 0) return; pts += +L.e[k] || 0; var m = k.split("|")[2] || ""; if (/^s\d+$/.test(m)) reads++; });
+    return { pts: pts, reads: reads };
+  }
   function vineHTML(hi) {
     var o = loadP(), kids = KIDS.filter(function (k) { return !k.parent; }), total = 0, s = "";
     kids.forEach(function (k) { total += (o[k.name] || {}).fed || 0; });
+    var EFF = {}, leader = "", lead = 0;
+    kids.forEach(function (k) { EFF[k.name] = effortOf(k.name); if (EFF[k.name].pts > lead) { lead = EFF[k.name].pts; leader = k.name; } });
     function lerp(p, q, t) { return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; }
     function bez(P, t) {
       var u = 1 - t;
@@ -988,6 +1010,10 @@
       if (f >= 10) s += '<text x="' + n1(tip[0] + 18) + '" y="' + n1(tip[1] - 6) + '" font-size="16">✨</text>';
       var tx = tips[sl][0], ty = tips[sl][1] - 36, lab = k.icon + " " + k.name + " · " + f;
       s += '<line x1="' + tx + '" y1="' + (ty + 12) + '" x2="' + n1(tip[0]) + '" y2="' + n1(tip[1]) + '" stroke="' + k.color + '" stroke-width="2" stroke-dasharray="3 4" opacity=".7"/>';
+      var ef = EFF[k.name], crown = k.name === leader && lead > 0;
+      var py = ty < 46 ? ty + 15 : ty - 38;
+      s += '<rect x="' + (tx - 58) + '" y="' + py + '" width="116" height="20" rx="10" fill="#fff" stroke="' + k.color + '" stroke-width="1.5" opacity=".95"/>' +
+           '<text x="' + tx + '" y="' + (py + 14) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#2b2b3a">' + (crown ? "👑 " : "") + '📚' + ef.reads + ' · ⭐' + ef.pts + '</text>';
       s += '<rect x="' + (tx - 50) + '" y="' + (ty - 12) + '" width="100" height="24" rx="12" fill="' + k.color + '" stroke="' + (isHi ? "#2b2b3a" : "#fff") + '" stroke-width="' + (isHi ? 2.5 : 2) + '"/>' +
            '<text x="' + tx + '" y="' + (ty + 5) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="rgba(0,0,0,.35)" stroke-width=".6" paint-order="stroke">' + lab + '</text>';
       s += '</g>';
@@ -1562,6 +1588,17 @@
   function kidGrp(k) { var a = new Date().getFullYear() - (k.born || 2015); return a <= 9 ? "A" : a <= 12 ? "B" : "C"; }
   function modeGrp(k) { var i = GRP.indexOf(kidGrp(k)) + (BOOK_MODE === "down" ? -1 : BOOK_MODE === "up" ? 1 : 0); return GRP[Math.max(0, Math.min(2, i))]; }
   function storyPts(x) { return (x.g || "A") === "C" ? READ_PTS + 5 : READ_PTS; }
+  // Đọc càng nhiều truyện trong ngày thì điểm mỗi truyện càng giảm (vẫn đếm số truyện đã đọc): 3 truyện đầu đủ điểm, truyện 4–5 còn một nửa, từ truyện 6 chỉ 2 điểm
+  var READ_FULL = 3, READ_HALF = 5, READ_MIN = 2;
+  function readsToday(name, day) {
+    var L = loadL(), pre = name + "|" + day + "|s", n = 0;
+    Object.keys(L.e).forEach(function (k) { if (k.indexOf(pre) === 0 && /^\d+$/.test(k.slice(pre.length))) n++; });
+    return n;
+  }
+  function storyEarn(x, name, day) {
+    var full = storyPts(x), n = readsToday(name, day);
+    return n < READ_FULL ? full : n < READ_HALF ? Math.round(full / 2) : READ_MIN;
+  }
   // Ẩn bớt truyện bé đã đọc từ HIDE_READS lần (ngày khác nhau) trở lên, hoặc tự chấm ≤ HIDE_STARS sao. Bấm "Truyện đã ẩn" để xem lại. Truyện đang mở không bị ẩn giữa chừng.
   var HIDE_READS = 3, HIDE_STARS = 2, SHOW_HIDDEN = false, BOOK_HIDDEN = 0;
   function readCount(name, i) {
@@ -1592,9 +1629,16 @@
   // ----- Câu hỏi trắc nghiệm sau mỗi truyện: đúng ngay lần đầu +QZ_FIRST điểm, đúng sau khi thử lại +QZ_RETRY điểm (mỗi câu một lần mỗi ngày) -----
   var QZ_FIRST = 5, QZ_RETRY = 2, QZ_TRY = {}, QZ_BAD = {};
   function qzOf(i) { return STORIES[i].q || QZ[i] || []; }
+  // Trắc nghiệm cũng giảm dần: tính theo số truyện KHÁC đã có điểm trắc nghiệm trong ngày (3 truyện đầu đủ điểm, truyện 4–5 còn 3/1 điểm, từ truyện 6 chỉ 1 điểm)
+  function qzTier(name, day, i) {
+    var L = loadL(), pre = name + "|" + day + "|s", seen = {};
+    Object.keys(L.e).forEach(function (k) { if (k.indexOf(pre) !== 0) return; var m = k.slice(pre.length).match(/^(\d+)q\d+$/); if (m && +m[1] !== i) seen[m[1]] = 1; });
+    var n = Object.keys(seen).length;
+    return n < READ_FULL ? [QZ_FIRST, QZ_RETRY] : n < READ_HALF ? [3, 1] : [1, 1];
+  }
   function qzBox(i, own, day) {
     var qs = qzOf(i); if (!qs.length) return null;
-    var box = el("div", "quiz"), L = loadL();
+    var box = el("div", "quiz"), L = loadL(), tier = qzTier(viewing.name, day, i);
     box.appendChild(el("b", "", "🧠 Thử xem con nhớ gì" + (own ? "" : " (ba mẹ xem đáp án)")));
     qs.forEach(function (q, k) {
       var key = "s" + i + "q" + k, lk = viewing.name + "|" + day + "|" + key, got = L.e[lk] !== undefined, n = q.a.length, sh = (i * 3 + k * 2 + 1) % n, order = [], j;
@@ -1606,14 +1650,14 @@
         var b = el("button", "qzopt" + ((got || !own) && right ? " ok" : bad ? " bad" : ""), (((got || !own) && right) ? "✓ " : bad ? "✗ " : "") + q.a[oi]);
         b.disabled = !own || got || bad;
         b.onclick = function () {
-          if (right) { var pts = (QZ_TRY[lk] || 0) === 0 ? QZ_FIRST : QZ_RETRY; earn(key, pts); }
+          if (right) { var pts = (QZ_TRY[lk] || 0) === 0 ? tier[0] : tier[1]; earn(key, pts); }
           else { QZ_TRY[lk] = (QZ_TRY[lk] || 0) + 1; QZ_BAD[lk + "|" + oi] = 1; renderBook(0); }
         };
         blk.appendChild(b);
       });
       if (own) {
         var tries = QZ_TRY[lk] || 0;
-        blk.appendChild(el("small", "qzmsg", got ? "✓ Đúng rồi! Hôm nay con đã nhận điểm câu này." : tries ? "Chưa đúng, con thử lại nhé (đúng lần sau được " + QZ_RETRY + " điểm)." : "Đúng ngay lần đầu được " + QZ_FIRST + " điểm."));
+        blk.appendChild(el("small", "qzmsg", got ? "✓ Đúng rồi! Hôm nay con đã nhận điểm câu này." : tries ? "Chưa đúng, con thử lại nhé (đúng lần sau được " + tier[1] + " điểm)." : "Đúng ngay lần đầu được " + tier[0] + " điểm."));
       }
       box.appendChild(blk);
     });
@@ -1657,10 +1701,13 @@
     var qb = qzBox(BOOK_I, own, day); if (qb) wrap.appendChild(qb);
     var got = !!d.done[day + "|s" + BOOK_I], reward = el("div", "reward");
     if (own) {
-      var rb = el("button", "send" + (got ? " alt" : " good"), got ? "✓ Hôm nay đã nhận điểm truyện này" : "Con đã đọc xong (+" + storyPts(s) + " điểm)");
+      var ep = storyEarn(s, viewing.name, day), rn = readsToday(viewing.name, day);
+      var rb = el("button", "send" + (got ? " alt" : " good"), got ? "✓ Hôm nay đã nhận điểm truyện này" : "Con đã đọc xong (+" + ep + " điểm)");
       rb.disabled = got;
-      rb.onclick = function () { earn("s" + BOOK_I, storyPts(s)); };
+      rb.onclick = function () { earn("s" + BOOK_I, ep); };
       reward.appendChild(rb);
+      if (!got && ep < storyPts(s)) reward.appendChild(el("small", "", "Hôm nay con đã đọc " + rn + " truyện nên điểm mỗi truyện giảm dần — đọc vừa đủ, hiểu kỹ mới vui nhé!"));
+      else if (rn) reward.appendChild(el("small", "", "Hôm nay con đã đọc " + rn + " truyện. 3 truyện đầu đủ điểm, các truyện sau điểm giảm dần."));
     } else reward.appendChild(el("small", "", "Bé tự bấm 'đã đọc xong' ở góc của mình để nhận điểm."));
     reward.appendChild(starRow("s" + BOOK_I, own, function () { renderBook(0); }));
     reward.appendChild(whyRow("s" + BOOK_I, own, function () { renderBook(0); }));
@@ -2228,7 +2275,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611161157";
+  var APP_VER = "202611161346";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
