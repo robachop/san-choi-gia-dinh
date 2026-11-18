@@ -192,6 +192,10 @@
 .grpchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.grpchips button{font-size:13px;padding:6px 10px}
 .zfold>summary{cursor:pointer;list-style:none}.zfold>summary::-webkit-details-marker{display:none}.zfold>summary::after{content:" ▸"}.zfold[open]>summary::after{content:" ▾"}.zfold>summary small{font-weight:400;opacity:.8;font-size:12px}.zfold[open]>summary small{display:none}
 .quiz{background:#fff8e1;border:2px dashed #f59f00;border-radius:14px;padding:10px;margin:10px 0}.qztext{font-weight:700;margin:8px 0 4px}.qzopt{display:block;width:100%;text-align:left;margin:4px 0;padding:9px 11px;border:2px solid #ced4da;border-radius:10px;background:#fff;font-size:15px}.qzopt.ok{background:#d3f9d8;border-color:#37b24d}.qzopt.bad{background:#ffe3e3;border-color:#fa5252;color:#868e96}.qzmsg{display:block;margin-top:4px;color:#555}
+  .bible-answer-form { display:grid; gap:10px; margin-top:12px; }
+  .bible-answer-input { display:block; box-sizing:border-box; width:100%; min-height:96px; padding:12px; border:1px solid #a49cb7; border-radius:12px; background:#fff; color:inherit; font:inherit; font-size:1.05rem; resize:vertical; }
+  .bible-answer-form .send { justify-self:start; min-height:44px; margin:0; }
+  .zgame .page .bible-reveal { display:block; min-height:44px; margin:28px 0 0 auto; background:#fff; color:#4e4269; border:1px solid #a49cb7; }
 </style>
 </head>
 <body>
@@ -1690,20 +1694,26 @@
     if (q.choices) {
       q.choices.forEach(function (choice) { button(choice, function () { reply(choice); }); });
     } else {
-      var form = el("form"), input = el("input");
+      var form = el("form", "bible-answer-form"), input = el("textarea", "bible-answer-input");
+      input.rows = 3;
       input.placeholder = "Nhập câu trả lời";
       input.setAttribute("aria-label", "Câu trả lời");
       input.required = true;
       input.maxLength = 350;
       form.appendChild(input);
-      form.appendChild(el("button", "send", "Kiểm tra"));
+      var check = el("button", "send", "Kiểm tra");
+      check.type = "submit";
+      form.appendChild(check);
       form.onsubmit = function (event) {
         event.preventDefault();
         if (input.value.trim()) reply(input.value.trim());
       };
       box.appendChild(form);
     }
-    button("Xem đáp án", function () { reply(""); });
+    var reveal = el("button", "send bible-reveal", "Xem đáp án");
+    reveal.type = "button";
+    reveal.onclick = function () { reply(""); };
+    box.appendChild(reveal);
   }
 
   function renderGameBook(dir) {
@@ -2447,7 +2457,7 @@
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ----- Tự báo khi có bản trang mới (máy các con còn giữ bản cũ trong bộ nhớ trình duyệt) -----
   // APP_VER do lệnh đẩy lên web tự đổi mỗi lần; bản chạy thử trên máy giữ "dev" (không kiểm tra).
-  var APP_VER = "202611182117";
+  var APP_VER = "202611182125";
   function checkUpdate() {
     if (APP_VER === "dev" || !window.fetch || location.protocol.indexOf("http") !== 0) return;
     fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
